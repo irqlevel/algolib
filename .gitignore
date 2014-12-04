@@ -18,9 +18,9 @@ hs_err_pid*
 target/
 
 #eclipse files
-.classpath
-.project
-.settings/
+#.classpath
+#.project
+#.settings/
 #swap files
 *.swp
 
