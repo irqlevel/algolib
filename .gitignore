@@ -24,3 +24,4 @@ target/
 #swap files
 *.swp
 
+/bin/

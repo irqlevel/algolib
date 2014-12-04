@@ -1,4 +1,4 @@
-package reverse;
+package algolib;
 
 public class ReverseString {
 
