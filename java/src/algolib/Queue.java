@@ -40,6 +40,8 @@ public class Queue {
 		q.enque(new Queue("E"));
 		q.deque();
 		q.enque(new Queue("C"));
+		q.deque();
+		q.deque();
 		Queue n;
 		while ((n = q.deque()) != null) {
 			System.out.println((String)n.data);

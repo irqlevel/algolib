@@ -28,9 +28,7 @@ public class Stack {
 		head.push(new Stack("A"));
 		head.push(new Stack("B"));
 		head.push(new Stack("C"));
-		Stack node;
-		while ((node = head.pop()) != null) {
-			System.out.println((String)node.data);
-		}
+		Stack n = head.pop();
+		System.out.println((String)n.data);
 	}
 }
