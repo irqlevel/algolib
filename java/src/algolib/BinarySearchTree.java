@@ -8,7 +8,7 @@ class BSTNode<K extends Comparable<K>, V> {
 }
 
 interface BSTEnumerator<K extends Comparable<K>, V> {
-	public void enumCallback(K key, V value);
+	public void enumCallback(K key, V value, int height);
 }
 
 public class BinarySearchTree<K extends Comparable<K>, V> {
@@ -64,17 +64,41 @@ public class BinarySearchTree<K extends Comparable<K>, V> {
 		return false;
 	}
 	
-	private void enumInOrder(BSTNode<K, V> root, BSTEnumerator<K, V> enumerator) {
+	private void enumInOrder(BSTNode<K, V> root, BSTEnumerator<K, V> enumerator, int height) {
 		BSTNode<K, V> curr = root;
 		if (curr.left != null)
-			enumInOrder(curr.left, enumerator);
-		enumerator.enumCallback(curr.key, curr.value);
+			enumInOrder(curr.left, enumerator, height+1);
+		enumerator.enumCallback(curr.key, curr.value, height);
 		if (curr.right != null)
-			enumInOrder(curr.right, enumerator);
+			enumInOrder(curr.right, enumerator, height+1);
 	}
 	
 	public void enumInOrder(BSTEnumerator<K, V> enumerator) {
-		enumInOrder(root, enumerator);
+		enumInOrder(root, enumerator, 0);
+	}
+	
+	private int minDepth(BSTNode<K,V> root) {
+		if (root == null)
+			return 0;
+		return 1 + Math.min(minDepth(root.left), minDepth(root.right));
+	}
+
+	private int maxDepth(BSTNode<K,V> root) {
+		if (root == null)
+			return 0;
+		return 1 + Math.max(maxDepth(root.left), maxDepth(root.right));
+	}
+	
+	public boolean isBalanced() {
+		return (maxDepth(root) - minDepth(root) <= 1) ? true : false;
+	}
+	
+	public int maxDepth() {
+		return maxDepth(root);
+	}
+	
+	public int minDepth() {
+		return minDepth(root);
 	}
 	
 	public static void main(String args[]) {
@@ -97,11 +121,12 @@ public class BinarySearchTree<K extends Comparable<K>, V> {
 		t.enumInOrder(new BSTEnumerator<Integer, String>() {
 
 			@Override
-			public void enumCallback(Integer key, String value) {
+			public void enumCallback(Integer key, String value, int height) {
 				// TODO Auto-generated method stub
-				System.out.println("Key=" + key + " Value=" + value);
+				System.out.println("Key=" + key + " Value=" + value + " Height=" + height);
 			}
 		});
-
+		
+		System.out.println("balanced=" + t.isBalanced() + " min=" + t.minDepth() + " max=" + t.maxDepth());
 	}
 }
