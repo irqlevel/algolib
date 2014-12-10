@@ -26,5 +26,4 @@ public class PrintParens {
 	public static void main(String args[]) {
 		printParens(3);
 	}
-	
 }
