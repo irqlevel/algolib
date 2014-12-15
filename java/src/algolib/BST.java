@@ -1,7 +1,9 @@
 package algolib;
 
+import java.security.SecureRandom;
 
-public class BinarySearchTree<K extends Comparable<K>, V> {
+
+public class BST<K extends Comparable<K>, V> {
 	private  BTreeNode<K, V> root = null;
 
 	public boolean insert(K key, V value) {
@@ -54,17 +56,23 @@ public class BinarySearchTree<K extends Comparable<K>, V> {
 		return false;
 	}
 	
-	private void enumInOrder(BTreeNode<K, V> root, BTreeNodeEnum<K, V> enumerator, int height) {
+	private boolean enumInOrder(BTreeNode<K, V> root, BTreeNodeEnum<K, V> enumerator, int height, Object context) {
 		BTreeNode<K, V> curr = root;
 		if (curr.left != null)
-			enumInOrder(curr.left, enumerator, height+1);
-		enumerator.enumClb(curr.key, curr.value, height);
+			if (!enumInOrder(curr.left, enumerator, height+1, context))
+				return false;
+		
+		if (!enumerator.enumClb(curr.key, curr.value, height, context))
+			return false;
+		
 		if (curr.right != null)
-			enumInOrder(curr.right, enumerator, height+1);
+			if (!enumInOrder(curr.right, enumerator, height+1, context))
+				return false;
+		return true;
 	}
 	
-	public void enumInOrder(BTreeNodeEnum<K, V> enumerator) {
-		enumInOrder(root, enumerator, 0);
+	public boolean enumInOrder(BTreeNodeEnum<K, V> enumerator, Object context) {
+		return enumInOrder(root, enumerator, 0, context);
 	}
 	
 	private int minDepth(BTreeNode<K,V> root) {
@@ -92,6 +100,7 @@ public class BinarySearchTree<K extends Comparable<K>, V> {
 	}
 	
 	private boolean isLess(BTreeNode<K, V> root, K key, boolean less) {
+		System.out.println("isLess");
 		if (root == null)
 			return true;
 		if (less) {
@@ -113,33 +122,55 @@ public class BinarySearchTree<K extends Comparable<K>, V> {
 		return (isLess(root.left, root.key, true) && isLess(root.right, root.key, false));
 	}
 	
+	public boolean isBST2() {
+		BTreeNode<K,V> prev = null;
+		
+		return this.enumInOrder(new BTreeNodeEnum<K, V>()   {
+			@Override
+			public boolean enumClb(K key, V value, int height, Object context) {
+				// TODO Auto-generated method stub
+				BTreeNode<K,V> prev = (BTreeNode<K,V>)context;
+				if (prev != null && prev.key.compareTo(key) > 0)
+					return false;
+				return true;
+			}
+		}, prev);
+	}
+	
+	private boolean isKeyInRange(BTreeNode<K, V> root, K min, K max) {
+		System.out.println("isKeyInRange");
+		if (root == null)
+			return true;
+		if (root.key.compareTo(min) < 0)
+			return false;
+		if (root.key.compareTo(max) >= 0)
+			return false;
+		return (isKeyInRange(root.left, min, root.key) && isKeyInRange(root.right, root.key, max));
+	}
+	
+	public boolean isBST3(K min, K max) {
+		return isKeyInRange(root, min, max);
+	}
+	
 	public static void main(String args[]) {
-		BinarySearchTree<Integer, String> t = new BinarySearchTree<Integer, String>();
-		t.insert(166, "Vasya2");
-		t.insert(1, "Petya");
-		t.insert(2, "Vasya");
-		t.insert(3, "Vasya2");
-		t.insert(1, "Vasya2");
-		t.insert(13, "Vasya2");
-		t.insert(166, "Kolya");
-		t.insert(16, "Vasya2");
-		t.insert(-2, "Vasya2");
-		t.insert(-9, "Vasya2");
-		t.insert(66, "Vasya2");
-		System.out.println(t.search(2));
-		System.out.println(t.search(3));
-		System.out.println(t.search(32));
+		SecureRandom rnd = new SecureRandom();
+		
+		BST<Integer, String> t = new BST<Integer, String>();
+		for (int i = 0; i < 10; i++) {
+			t.insert(rnd.nextInt(), "Petya");
+		}
 		
 		t.enumInOrder(new BTreeNodeEnum<Integer, String>() {
 
 			@Override
-			public void enumClb(Integer key, String value, int height) {
+			public boolean enumClb(Integer key, String value, int height, Object context) {
 				// TODO Auto-generated method stub
 				System.out.println("Key=" + key + " Value=" + value + " Height=" + height);
+				return true;
 			}
-		});
+		}, null);
 		
 		System.out.println("balanced=" + t.isBalanced() + " min=" + t.minDepth() + " max=" + t.maxDepth());
-		System.out.println("isBST=" + t.isBST());
+		System.out.println("isBST=" + t.isBST() + " isBST2=" + t.isBST2() + " isBST3=" + t.isBST3(Integer.MIN_VALUE, Integer.MAX_VALUE));
 	}
 }
