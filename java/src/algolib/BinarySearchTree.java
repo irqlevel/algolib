@@ -1,21 +1,11 @@
 package algolib;
 
 
-class BSTNode<K extends Comparable<K>, V> {
-	public K key = null;
-	public V value = null;
-	public BSTNode<K, V> left = null, right = null;
-}
-
-interface BSTEnumerator<K extends Comparable<K>, V> {
-	public void enumCallback(K key, V value, int height);
-}
-
 public class BinarySearchTree<K extends Comparable<K>, V> {
-	private  BSTNode<K, V> root = null;
+	private  BTreeNode<K, V> root = null;
 
 	public boolean insert(K key, V value) {
-		BSTNode<K, V> curr = root, prev = null;
+		BTreeNode<K, V> curr = root, prev = null;
 		boolean left = false;
 		
 		while (curr != null) {
@@ -31,7 +21,7 @@ public class BinarySearchTree<K extends Comparable<K>, V> {
 			}
 		}
 		
-		BSTNode<K, V> node = new BSTNode<K, V>();
+		BTreeNode<K, V> node = new BTreeNode<K, V>();
 		node.key = key;
 		node.value = value;
 		if (prev == null)
@@ -47,7 +37,7 @@ public class BinarySearchTree<K extends Comparable<K>, V> {
 	}
 	
 	public V search(K key) {
-		BSTNode<K, V> curr = root;
+		BTreeNode<K, V> curr = root;
 		while (curr != null) {
 			if (key.compareTo(curr.key) == 0)
 				return curr.value;
@@ -64,26 +54,26 @@ public class BinarySearchTree<K extends Comparable<K>, V> {
 		return false;
 	}
 	
-	private void enumInOrder(BSTNode<K, V> root, BSTEnumerator<K, V> enumerator, int height) {
-		BSTNode<K, V> curr = root;
+	private void enumInOrder(BTreeNode<K, V> root, BTreeNodeEnum<K, V> enumerator, int height) {
+		BTreeNode<K, V> curr = root;
 		if (curr.left != null)
 			enumInOrder(curr.left, enumerator, height+1);
-		enumerator.enumCallback(curr.key, curr.value, height);
+		enumerator.enumClb(curr.key, curr.value, height);
 		if (curr.right != null)
 			enumInOrder(curr.right, enumerator, height+1);
 	}
 	
-	public void enumInOrder(BSTEnumerator<K, V> enumerator) {
+	public void enumInOrder(BTreeNodeEnum<K, V> enumerator) {
 		enumInOrder(root, enumerator, 0);
 	}
 	
-	private int minDepth(BSTNode<K,V> root) {
+	private int minDepth(BTreeNode<K,V> root) {
 		if (root == null)
 			return 0;
 		return 1 + Math.min(minDepth(root.left), minDepth(root.right));
 	}
 
-	private int maxDepth(BSTNode<K,V> root) {
+	private int maxDepth(BTreeNode<K,V> root) {
 		if (root == null)
 			return 0;
 		return 1 + Math.max(maxDepth(root.left), maxDepth(root.right));
@@ -99,6 +89,28 @@ public class BinarySearchTree<K extends Comparable<K>, V> {
 	
 	public int minDepth() {
 		return minDepth(root);
+	}
+	
+	private boolean isLess(BTreeNode<K, V> root, K key, boolean less) {
+		if (root == null)
+			return true;
+		if (less) {
+			if (root.key.compareTo(key) >= 0) {
+				System.out.println("less=" + less + " key=" + root.key + " key=" + key);
+				return false;
+			}
+		} else {
+			if (root.key.compareTo(key) < 0) {
+				System.out.println("less=" + less + " key=" + root.key + " key=" + key);
+				return false;
+			}
+		}
+
+		return (isLess(root.left, root.key, true) && isLess(root.right, root.key, false));
+	}
+		
+	public boolean isBST() {
+		return (isLess(root.left, root.key, true) && isLess(root.right, root.key, false));
 	}
 	
 	public static void main(String args[]) {
@@ -118,15 +130,16 @@ public class BinarySearchTree<K extends Comparable<K>, V> {
 		System.out.println(t.search(3));
 		System.out.println(t.search(32));
 		
-		t.enumInOrder(new BSTEnumerator<Integer, String>() {
+		t.enumInOrder(new BTreeNodeEnum<Integer, String>() {
 
 			@Override
-			public void enumCallback(Integer key, String value, int height) {
+			public void enumClb(Integer key, String value, int height) {
 				// TODO Auto-generated method stub
 				System.out.println("Key=" + key + " Value=" + value + " Height=" + height);
 			}
 		});
 		
 		System.out.println("balanced=" + t.isBalanced() + " min=" + t.minDepth() + " max=" + t.maxDepth());
+		System.out.println("isBST=" + t.isBST());
 	}
 }
