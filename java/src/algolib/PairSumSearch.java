@@ -3,16 +3,6 @@ package algolib;
 import java.util.ArrayList;
 import java.util.List;
 
-class Pair<T> {
-	public T first;
-	public T second;
-	
-	Pair(T first, T second) {
-		this.first = first;
-		this.second = second;
-	}
-}
-
 public class PairSumSearch {
 	public static List<Pair<Integer>> search(Integer[] arr, Integer target) {
 		List<Pair<Integer>> result = new ArrayList<Pair<Integer>>();
@@ -36,7 +26,7 @@ public class PairSumSearch {
 	}
 	
 	public static void main(String args[]) {
-		List<Pair<Integer>> results = search(new Integer[]{1, 3, 4, 2, 7, 1, 3, 4, 2, 4, 2, 3, 5, 3, 4, 6, 10}, 7);
+		List<Pair<Integer>> results = search(new Integer[]{1, 3, 4, 2, 7, 1, 3, 4, 2, 4, 2, 3, 5, 3, 4, 6, 10}, 12);
 		for (Pair<Integer> res : results) {
 			System.out.println(res.first + " " + res.second);
 		}
