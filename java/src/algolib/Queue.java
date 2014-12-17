@@ -1,19 +1,13 @@
 package algolib;
 
-public class Queue {
-	public Object data = null;
-	public Queue head = null;
-	public Queue tail = null;
-	public Queue next = null;
+public class Queue<T> {
+	public SListEntry<T> head = null;
+	public SListEntry<T> tail = null;
+	public SListEntry<T> next = null;
 	
-	public Queue() {
-	}
-	
-	public Queue(Object data) {
-		this.data = data;
-	}
-	
-	public void enque(Queue node) {
+
+	public void enque(T value) {
+		SListEntry<T> node = new SListEntry<T>(value);
 		if (this.tail != null)
 			this.tail.next = node;
 		this.tail = node;
@@ -21,30 +15,28 @@ public class Queue {
 			this.head = node;
 	}
 	
-	public Queue deque() {
-		Queue first = this.head;
-		if (first != null)
-			this.head = first.next;
+	public T deque() {
+		SListEntry<T> first = this.head;
+		if (first == null)
+			return null;
+		
+		this.head = first.next;
 		if (first == this.tail)
 			this.tail = null;
-		return first;
+		return first.value;
 	}
 	
 	public static void main(String args[]) {
-		Queue q = new Queue();
-		q.enque(new Queue("A"));
-		q.enque(new Queue("B"));
-		q.enque(new Queue("E"));
-		q.deque();
-		q.enque(new Queue("C"));
-		q.enque(new Queue("E"));
-		q.deque();
-		q.enque(new Queue("C"));
-		q.deque();
-		q.deque();
-		Queue n;
-		while ((n = q.deque()) != null) {
-			System.out.println((String)n.data);
+		Queue<String> q = new Queue<String>();
+		q.enque("1");
+		q.enque("2");
+		q.enque("3");
+		q.enque("4");
+		q.enque("5");
+		q.enque("6");
+		String v;
+		while ((v = q.deque()) != null) {
+			System.out.println(v);
 		}
 	}
 }

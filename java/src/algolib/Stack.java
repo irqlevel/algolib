@@ -1,34 +1,32 @@
 package algolib;
 
-public class Stack {
-	public Object data = null;
-	public Stack next = null;
+public class Stack<T> {
+	public SListEntry<T> head = null;
 	
-	public Stack() {
+	public void push(T v) {
+		SListEntry<T> node = new SListEntry<T>(v);
+		node.next = this.head;
+		this.head = node;
 	}
 	
-	public Stack(Object data) {
-		this.data = data;
-	}
-	public void push(Stack node) {
-		node.next = this.next;
-		this.next = node;
-	}
-	
-	public Stack pop() {
-		Stack first = this.next;
-		if (first != null) {
-			this.next = first.next;
-		}
-		return first;
+	public T pop() {
+		SListEntry<T> first = head;
+		if (first == null)
+			return null;
+		
+		this.head = first.next;
+		return first.value;
 	}
 	
 	public static void main(String args[]) {
-		Stack head = new Stack();
-		head.push(new Stack("A"));
-		head.push(new Stack("B"));
-		head.push(new Stack("C"));
-		Stack n = head.pop();
-		System.out.println((String)n.data);
+		Stack<String> s = new Stack<String>();
+		s.push("1");
+		s.push("2");
+		s.push("3");
+		s.push("4");
+		s.push("5");
+		String v;
+		while ((v = s.pop()) != null)
+			System.out.println(v);
 	}
 }
