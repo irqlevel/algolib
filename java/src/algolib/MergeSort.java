@@ -7,7 +7,7 @@ public class MergeSort {
 		int j = pivot;
 		int pos = start;
 		
-		Array.copy(buf, arr, start, end);
+		ArrayHelper.copy(buf, arr, start, end);
 		
 		while (i < pivot && j < end) {
 			if (buf[i].compareTo(buf[j]) < 0) {
@@ -42,20 +42,20 @@ public class MergeSort {
 	public static void main(String args[]) throws Exception {
 		Integer[] arr = {105, 7, 5, 4, -33, 3, 9, 1};
 		Integer[] buf = new Integer[arr.length];
-		System.out.println("isSorted=" + Array.isSorted(arr));
+		System.out.println("isSorted=" + ArrayHelper.isSorted(arr));
 		MergeSort.sort(arr, buf);
 		for (int i = 0; i < arr.length; i++) {
 			System.out.println("arr["+i+"]=" + arr[i]);
 		}
-		System.out.println("isSorted=" + Array.isSorted(arr));
+		System.out.println("isSorted=" + ArrayHelper.isSorted(arr));
 		String[] sarr = {"Petya", "Vasya", "kolya", "Olya", "natasha", "petr", "Kostya", "koly", "Pet"};
 		String[] sbuf = new String[sarr.length];
 
-		System.out.println("isSorted=" + Array.isSorted(sarr));
+		System.out.println("isSorted=" + ArrayHelper.isSorted(sarr));
 		MergeSort.sort(sarr, sbuf);
 		for (int i = 0; i < arr.length; i++) {
 			System.out.println("arr["+i+"]=" + sarr[i]);
 		}
-		System.out.println("isSorted=" + Array.isSorted(sarr));
+		System.out.println("isSorted=" + ArrayHelper.isSorted(sarr));
 	}
 }

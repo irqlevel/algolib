@@ -41,6 +41,6 @@ public class DPCoinsSum {
 		
 		System.out.println("numCoins=" + coins.length);
 		System.out.println("coins:");
-		Array.print(Helper.intArrToIntegerArr(coins));
+		ArrayHelper.print(Helper.intArrToIntegerArr(coins));
 	}
 }

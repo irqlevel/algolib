@@ -1,6 +1,6 @@
 package algolib;
 
-public class Array {
+public class ArrayHelper {
 	public static <T extends Comparable<T>> boolean isSorted(T arr[]) {
 		if (arr.length == 1)
 			return true;
