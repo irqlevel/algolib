@@ -11,6 +11,10 @@ class GraphEnumStat {
 public class Graph<ID> {
 	private Map<ID, GraphNode<ID>> nodes = new HashMap<ID, GraphNode<ID>>();
 	
+	public Graph() {
+		
+	}
+	
 	public Graph(ID ids[]) {
 		for (ID id : ids)
 			nodes.put(id, new GraphNode<ID>(id));
@@ -24,7 +28,7 @@ public class Graph<ID> {
 		return nodes.keySet();
 	}
 	
-	public void bfsPrepare() {
+	public void searchPrepare() {
 		GraphNode<ID> node;
 		for (ID id : nodes.keySet()) {
 			node = this.getNode(id);
@@ -36,15 +40,8 @@ public class Graph<ID> {
 		if (nodes.size() == 0)
 			return false;
 
-		GraphNode<ID> node, start = null;
-		for (ID id : nodes.keySet()) {
-			node = nodes.get(id);
-			if (node.color == GraphNode.UNVISITED) {
-				start = node;
-				break;
-			}
-		}
-		
+		GraphNode<ID> node, start;
+		start = this.selectUnvisited();
 		if (start == null)
 			return false;
 		
@@ -64,6 +61,82 @@ public class Graph<ID> {
 				return false;
 		}
 	
+		return true;
+	}
+	
+	private GraphNode<ID> selectUnvisited() {
+		GraphNode<ID> node, start = null;
+		for (ID id : nodes.keySet()) {
+			node = nodes.get(id);
+			if (node.color == GraphNode.UNVISITED) {
+				start = node;
+				break;
+			}
+		}
+		return start;
+	}
+	
+	private boolean dfsRecInternal(GraphNode<ID> start, GraphNodeEnum<ID> enumerator, Object context)
+	{
+		start.color = GraphNode.VISITING;
+		for (ID id : start.sibIds.keySet()) {
+			GraphNode<ID> node = this.getNode(id);
+			if (node.color == GraphNode.UNVISITED)
+				if (!dfsRecInternal(node, enumerator, context))
+					return false;
+		}
+		
+		start.color = GraphNode.VISITED;
+		if (!enumerator.enumClb(start, context))
+			return false;
+		
+		return true;
+	}
+	
+	public boolean dfsRec(GraphNodeEnum<ID> enumerator, Object context) {
+		if (nodes.size() == 0)
+			return false;
+
+		GraphNode<ID> start = this.selectUnvisited();
+		if (start == null)
+			return false;
+		
+		return dfsRecInternal(start, enumerator, context);
+	}
+	
+	public boolean dfsIter(GraphNodeEnum<ID> enumerator, Object context) {
+		if (nodes.size() == 0)
+			return false;
+
+		GraphNode<ID> start = this.selectUnvisited();
+		if (start == null)
+			return false;
+		
+		Stack<GraphNode<ID>> stack = new Stack<GraphNode<ID>>();
+		start.color = GraphNode.VISITING;
+		stack.push(start);
+		
+		GraphNode<ID> node;
+		int found;
+		while ((node = stack.pop()) != null) {
+			stack.push(node);
+			found = 0;
+			for (ID id : node.sibIds.keySet()) {
+				GraphNode<ID> sib = this.getNode(id);
+				if (sib.color == GraphNode.UNVISITED) {
+					sib.color = GraphNode.VISITING;
+					stack.push(sib);
+					found++;
+				}
+			}
+			if (found == 0) {
+				node = stack.pop();
+				node.color = GraphNode.VISITED;
+				if (!enumerator.enumClb(node, context))
+					return false;
+			}
+		}
+		
 		return true;
 	}
 	
@@ -91,14 +164,19 @@ public class Graph<ID> {
 		
 		return g;
 	}
-
-	public static void main(String args[]) {
-		Rng rng = new Rng();
+	
+	public static Graph<Integer> generate(int numNodes, double p) {
+		if (numNodes <= 0)
+			return null;
 		
-		int [][]m = new int[100][100];
+		if (p < 0 || p >= 1)
+			return null;
+		
+		Rng rng = new Rng();
+		int [][]m = new int[numNodes][numNodes];
 		for (int i = 0; i < m.length; i++) {		
-			for (int j = 0; j < m[i].length; j++) {
-				if (rng.nextDouble() < 0.01)
+			for (int j = 0; j < i; j++) {
+				if (rng.nextDouble() < p)
 					m[i][j] = 1;
 				else
 					m[i][j] = 0;
@@ -109,11 +187,34 @@ public class Graph<ID> {
 			for (int j = 0; j < m[i].length; j++)
 				if (m[i][j] > 0)
 					System.out.println("[" + i + "][" + j + "]=" + m[i][j]);
-
-		Graph<Integer> g = Graph.generate(m);
+		
+		return Graph.generate(m);
+	}
+	
+	public void addNode(GraphNode<ID> n) {
+		nodes.put(n.id, n);
+	}
+	
+	public void addLink(ID fromId, ID toId) {
+		GraphNode<ID> from = getNode(fromId);
+		if (from == null) {
+			from = new GraphNode<ID>(fromId);
+			addNode(from);
+		}
+		
+		GraphNode<ID> to = getNode(toId);
+		if (to == null) {
+			to = new GraphNode<ID>(toId);
+			addNode(to);
+		}
+		
+		from.connect(to.id);
+	}
+	
+	public static int numClustersByBfs(Graph<Integer> g) {
 		GraphEnumStat st = new GraphEnumStat();
 		
-		g.bfsPrepare();
+		g.searchPrepare();
 		int clusters = 0;
 		while (true) {
 			st.numNodes = 0;
@@ -122,6 +223,7 @@ public class Graph<ID> {
 				@Override
 				public boolean enumClb(GraphNode<Integer> node, Object context) {
 					// TODO Auto-generated method stub
+					GraphEnumStat st = (GraphEnumStat)context;
 					System.out.println("node " + node.id);
 					st.numNodes++;
 					return true;
@@ -133,6 +235,97 @@ public class Graph<ID> {
 			clusters++;
 			System.out.println("numNodes=" + st.numNodes);
 		}
-		System.out.println("clusters=" + clusters);
+		return clusters;
+	}
+	
+	public static int numClustersByDfsIter(Graph<Integer> g) {
+		GraphEnumStat st = new GraphEnumStat();
+		
+		g.searchPrepare();
+		int clusters = 0;
+		while (true) {
+			st.numNodes = 0;
+			if (!g.dfsIter(new GraphNodeEnum<Integer>() {
+				
+				@Override
+				public boolean enumClb(GraphNode<Integer> node, Object context) {
+					// TODO Auto-generated method stub
+					GraphEnumStat st = (GraphEnumStat)context;
+					System.out.println("node " + node.id);
+					st.numNodes++;
+					return true;
+				}
+				},
+			st
+			))
+				break;
+			clusters++;
+			System.out.println("numNodes=" + st.numNodes);
+		}
+		return clusters;
+	}
+	
+	public static int numClustersByDfsRec(Graph<Integer> g) {
+		GraphEnumStat st = new GraphEnumStat();
+		
+		g.searchPrepare();
+		int clusters = 0;
+		while (true) {
+			st.numNodes = 0;
+			if (!g.dfsRec(new GraphNodeEnum<Integer>() {
+				
+				@Override
+				public boolean enumClb(GraphNode<Integer> node, Object context) {
+					// TODO Auto-generated method stub
+					GraphEnumStat st = (GraphEnumStat)context;
+					System.out.println("node " + node.id);
+					st.numNodes++;
+					return true;
+				}
+				},
+			st
+			))
+				break;
+			clusters++;
+			System.out.println("numNodes=" + st.numNodes);
+		}
+		return clusters;
+	}
+	
+	public static void topSort() {
+		Graph<Integer> g = new Graph<Integer>();
+		
+		g.addLink(0, 1);
+		g.addLink(0, 2);
+		g.addLink(1, 4);
+		g.addLink(1, 6);
+		g.addLink(2, 3);
+		g.addLink(2, 5);
+		g.addLink(3, 4);
+		g.addLink(6, 5);
+		
+		g.searchPrepare();
+		GraphEnumStat st = new GraphEnumStat();
+		
+		g.dfsRec(new GraphNodeEnum<Integer>() {
+			
+			@Override
+			public boolean enumClb(GraphNode<Integer> node, Object context) {
+				// TODO Auto-generated method stub
+				GraphEnumStat st = (GraphEnumStat)context;
+				System.out.println("node " + node.id);
+				st.numNodes++;
+				return true;
+			}
+			}, st);
+	}
+	
+	public static void main(String args[]) {
+//		Graph<Integer> g = Graph.generate(10, 0.1);
+//		System.out.println("clusters=" + numClustersByBfs(g));
+//		Graph<Integer> g = Graph.generate(new int[][]{{0, 1, 0}, {0, 0, 0}, {0, 0, 0}});
+//		System.out.println("clusters=" + numClustersByDfsRec(g));
+//		System.out.println("clusters=" + numClustersByDfsIter(g));
+		topSort();
 	}
 }
