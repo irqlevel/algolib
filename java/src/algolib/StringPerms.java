@@ -8,10 +8,12 @@ public class StringPerms {
 	{
 		ArrayList<String> perms = new ArrayList<String>();
 		if (s.length() == 0) {
-			perms.add("");
+			return perms;
+		} else if (s.length() == 1) {
+			perms.add(s);
 			return perms;
 		}
-	
+		
 		char first = s.charAt(0);
 		String remainder = s.substring(1);
 			
@@ -28,7 +30,7 @@ public class StringPerms {
 	}
 	
 	public static void main(String args[]) {
-		ArrayList<String> perms = getAllPerms("prov");
+		ArrayList<String> perms = getAllPerms("abcd");
 		for (String s : perms) {
 			System.out.println(s);
 		}
