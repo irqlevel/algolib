@@ -1,7 +1,7 @@
 package algolib;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.TreeMap;
 
 public class GraphNode<ID> {
 	public static final int UNVISITED = 0;
@@ -10,9 +10,10 @@ public class GraphNode<ID> {
 	public int color = UNVISITED;
 	public ID id = null;
 
-	public Map<ID, Object> sibIds = new HashMap<ID, Object>(); 
-	public GraphNode(ID value) {
-		this.id = value;
+	public Map<ID, Object> sibIds = new TreeMap<ID, Object>(); 
+
+	public GraphNode(ID id) {
+		this.id = id;
 		this.color = UNVISITED;
 	}
 	

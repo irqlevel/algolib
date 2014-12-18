@@ -108,31 +108,34 @@ public class Graph<ID> {
 		if (nodes.size() == 0)
 			return false;
 
-		GraphNode<ID> start = this.selectUnvisited();
-		if (start == null)
+		GraphNode<ID> curr = this.selectUnvisited();
+		if (curr == null)
 			return false;
 		
 		Stack<GraphNode<ID>> stack = new Stack<GraphNode<ID>>();
-		start.color = GraphNode.VISITING;
-		stack.push(start);
+		curr.color = GraphNode.VISITING;
+		stack.push(curr);
 		
-		GraphNode<ID> node;
-		int found;
-		while ((node = stack.pop()) != null) {
-			stack.push(node);
-			found = 0;
-			for (ID id : node.sibIds.keySet()) {
-				GraphNode<ID> sib = this.getNode(id);
+		while ((curr = stack.peek()) != null) {
+			int found = 0;
+			Queue<GraphNode<ID>> q = new Queue<GraphNode<ID>>();
+			GraphNode<ID> sib;
+			for (ID id : curr.sibIds.keySet()) {
+				sib = this.getNode(id);
 				if (sib.color == GraphNode.UNVISITED) {
 					sib.color = GraphNode.VISITING;
-					stack.push(sib);
+					q.push(sib);
 					found++;
 				}
 			}
-			if (found == 0) {
-				node = stack.pop();
-				node.color = GraphNode.VISITED;
-				if (!enumerator.enumClb(node, context))
+			
+			if (found > 0) {
+				while ((sib = q.deque()) != null)
+					stack.push(sib);
+			} else {
+				stack.pop();
+				curr.color = GraphNode.VISITED;
+				if (!enumerator.enumClb(curr, context))
 					return false;
 			}
 		}
@@ -307,7 +310,7 @@ public class Graph<ID> {
 		g.searchPrepare();
 		GraphEnumStat st = new GraphEnumStat();
 		
-		g.dfsRec(new GraphNodeEnum<Integer>() {
+		g.dfsIter(new GraphNodeEnum<Integer>() {
 			
 			@Override
 			public boolean enumClb(GraphNode<Integer> node, Object context) {
@@ -320,12 +323,15 @@ public class Graph<ID> {
 			}, st);
 	}
 	
+	public static void numClusters() {
+		Graph<Integer> g = Graph.generate(100, 0.01);
+		System.out.println("clusters=" + numClustersByBfs(g));
+		System.out.println("clusters=" + numClustersByDfsRec(g));
+		System.out.println("clusters=" + numClustersByDfsIter(g));
+	}
+
 	public static void main(String args[]) {
-//		Graph<Integer> g = Graph.generate(10, 0.1);
-//		System.out.println("clusters=" + numClustersByBfs(g));
-//		Graph<Integer> g = Graph.generate(new int[][]{{0, 1, 0}, {0, 0, 0}, {0, 0, 0}});
-//		System.out.println("clusters=" + numClustersByDfsRec(g));
-//		System.out.println("clusters=" + numClustersByDfsIter(g));
+		numClusters();
 		topSort();
 	}
 }

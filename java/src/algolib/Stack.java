@@ -18,6 +18,12 @@ public class Stack<T> {
 		return first.value;
 	}
 	
+	public T peek() {
+		if (head == null)
+			return null;
+		return head.value;
+	}
+	
 	public static void main(String args[]) {
 		Stack<String> s = new Stack<String>();
 		s.push("1");
