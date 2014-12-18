@@ -4,8 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class PairSumSearch {
-	public static List<Pair<Integer>> search(Integer[] arr, Integer target) {
-		List<Pair<Integer>> result = new ArrayList<Pair<Integer>>();
+	public static List<Pair<Integer, Integer>> search(Integer[] arr, Integer target) {
+		List<Pair<Integer, Integer>> result = new ArrayList<Pair<Integer, Integer>>();
 		QuickSort.sort(arr);
 		
 		int i = 0, j = arr.length - 1;
@@ -16,7 +16,7 @@ public class PairSumSearch {
 			else if (sum > target)
 				j--;
 			else {
-				result.add(new Pair<Integer>(arr[i], arr[j]));
+				result.add(new Pair<Integer, Integer>(arr[i], arr[j]));
 				i++;
 				j--;
 			}
@@ -26,8 +26,8 @@ public class PairSumSearch {
 	}
 	
 	public static void main(String args[]) {
-		List<Pair<Integer>> results = search(new Integer[]{1, 3, 4, 2, 7, 1, 3, 4, 2, 4, 2, 3, 5, 3, 4, 6, 10}, 12);
-		for (Pair<Integer> res : results) {
+		List<Pair<Integer, Integer>> results = search(new Integer[]{1, 3, 4, 2, 7, 1, 3, 4, 2, 4, 2, 3, 5, 3, 4, 6, 10}, 12);
+		for (Pair<Integer, Integer> res : results) {
 			System.out.println(res.first + " " + res.second);
 		}
 	}

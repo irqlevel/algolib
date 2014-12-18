@@ -30,7 +30,7 @@ public class StringPerms {
 	}
 	
 	public static void main(String args[]) {
-		ArrayList<String> perms = getAllPerms("abcd");
+		ArrayList<String> perms = getAllPerms("as");
 		for (String s : perms) {
 			System.out.println(s);
 		}

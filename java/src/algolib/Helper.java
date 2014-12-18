@@ -1,6 +1,7 @@
 package algolib;
 
 import java.util.Map;
+import java.util.Set;
 
 public class Helper {
 
@@ -10,6 +11,18 @@ public class Helper {
 			return new KeyValue<K, V>(key, value);
 		}
 		return null;	
+	}
+	
+	public static <K> K popSet(Set<K> set) {
+		for (K key : set) {
+			if (set.remove(key))
+				return key;
+		}
+		return null;	
+	}
+	
+	public static <K> void pushSet(Set<K> set, K key) {
+		set.add(key);
 	}
 	
 	public static <K,V> void pushMap(Map<K, V> map, KeyValue<K, V> kv) {
