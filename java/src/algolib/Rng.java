@@ -2,6 +2,8 @@ package algolib;
 
 import java.nio.ByteBuffer;
 import java.security.SecureRandom;
+import java.util.HashMap;
+import java.util.Map;
 
 public class Rng {
 	private SecureRandom rng = new SecureRandom();
@@ -34,9 +36,77 @@ public class Rng {
 		return a/b;
 	}
 	
-	public static void main(String args[]) {
+	public int log2(int v) {
+		int res = 0;
+		while (v > 0) {
+			res++;
+			v >>= 1;
+		}
+		return res;
+	}
+	
+	public int randInt(int up) throws Exception {
+		if (up < 1)
+			throw new Exception("Invalid parameter");
+		if ((up & (up - 1)) == 0)
+			return (int) (nextLong() & (up - 1));
+		
+		int v, log;
+		log = log2(up);
+		while ((v = ((int)nextLong() & ((1 << log) - 1))) >= up);
+		
+		return v;
+	}
+	
+	public int rand5() throws Exception {
+		return randInt(5);
+	}
+	
+	public int rand2() throws Exception {
+		int v;
+		while ((v = rand5()) == 2);
+		return (v < 2) ? 0 : 1;
+	}
+	
+	public int rand7() throws Exception {
+		long v = 0;
+		for (int i = 0; i < 62; i++)
+			v|= rand2() << i;
+		return (int) ((v & (((long)1 << 62) - 1)) % 7);
+	}
+	
+	public int rand7_2() throws Exception {
+		int v;
+		while ((v = rand2() << 2 | rand2() << 1 | rand2()) >= 7);
+		return v;
+	}
+	
+	public int rand3() throws Exception {
+		int v;
+		
+		while ((v = rand5()) >= 3);
+		return v;
+	}
+	
+	public static void main(String args[]) throws Exception {
 		Rng rng = new Rng();
-		for (int i = 0; i < 100; i++)
-			System.out.println(rng.nextDouble());
+		//for (int i = 0; i < 100; i++)
+		//	System.out.println(rng.nextDouble());
+		Map<Integer, Integer> st = new HashMap<Integer, Integer>();
+		
+		for (int i = 0; i < 10000; i++) {
+			int k = rng.randInt(2);
+			Integer v = st.get(k);
+			if (v == null)
+				st.put(k, 1);
+			else
+				st.put(k, v+1);
+			
+			//System.out.println(rng.rand5());
+		}
+		
+		for (Integer k : st.keySet()) {
+			System.out.println("k=" + k + " count=" + st.get(k));
+		}
 	}
 }
