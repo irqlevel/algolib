@@ -20,6 +20,10 @@ public class Atoi {
 	}
 	
 	public static void main(String args[]) throws Exception {
+<<<<<<< HEAD
 		System.out.println(atoi(new String("10000").toCharArray(), 2));
+=======
+		System.out.println(atoi(new String("1000").toCharArray(), 2));
+>>>>>>> 621439c32d1ddef1bc0c701ba2f9015ac9c56ac3
 	}
 }
