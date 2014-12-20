@@ -1,6 +1,10 @@
 package algolib;
 
 import java.security.SecureRandom;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 
 public class BST<K extends Comparable<K>, V> extends BinaryTree<K, V> {
@@ -53,18 +57,69 @@ public class BST<K extends Comparable<K>, V> extends BinaryTree<K, V> {
 	public boolean remove(K key) {
 		return false;
 	}
+
+	private static <K extends Comparable<K>, V> BinaryTreeNode<K, V> __balance( 
+			K[] keys,
+			int a,
+			int b,
+			Map<K, V> map) {
+		if (a >= b)
+			return null;
 		
+		int mid = (a+b)/2;
+		BinaryTreeNode<K, V> root = 
+				new BinaryTreeNode<K, V>(keys[mid], map.get(keys[mid]));
+		
+		if (a < mid)
+			root.left = __balance(keys, a, mid, map);
+		
+		if ((mid+1) < b)
+			root.right = __balance(keys, mid+1, b, map);
+		
+		return root;
+	}
+	
+	public BST<K, V> balance() {
+		List<KeyValue<K,V>> kvs = new ArrayList<KeyValue<K,V>>();		
+		this.enumInOrder(new BinaryTreeNodeEnum<K,V>() {
+
+			@Override
+			public boolean enumClb(BinaryTreeNode<K, V> node, int height,
+					Object context) {
+				// TODO Auto-generated method stub
+				List<KeyValue<K,V>> kvs = (List<KeyValue<K,V>>)context;
+				kvs.add(new KeyValue<K,V>(node.key, node.value));
+				return true;
+			}}, kvs);
+		
+		Map<K, V> map = new HashMap<K, V>();
+		List<K> keys = new ArrayList<K>();
+		for (KeyValue<K,V> kv : kvs)
+			keys.add(kv.key);
+		
+		K[] keysArr = ArrayHelper.toArray(keys);
+		for (KeyValue<K,V> kv : kvs) 
+			map.put(kv.key, kv.value);
+		
+		BST<K, V> t = new BST<K, V>();
+		t.root = __balance(keysArr, 0, keysArr.length, map);
+		
+		return t;
+	}
+	
 	public static void main(String args[]) {
-		SecureRandom rnd = new SecureRandom();
+		Rng rng = new Rng();
 		
 		BST<Integer, String> t = new BST<Integer, String>();
-		for (int i = 0; i < 10; i++) {
-			t.insert(rnd.nextInt(), "Petya");
+		for (int i = 0; i < 100; i++) {
+			t.insert(i, "Petya");
 		}
 		
 		t.print();
+		t = t.balance();
+		t.print();
 		
 		System.out.println("balanced=" + t.isBalanced() + " min=" + t.minDepth() + " max=" + t.maxDepth());
-		System.out.println("isBST=" + t.isBST() + " isBST2=" + t.isBST2() + " isBST3=" + t.isBST3(Integer.MIN_VALUE, Integer.MAX_VALUE));
+		//System.out.println("isBST=" + t.isBST() + " isBST2=" + t.isBST2() + " isBST3=" + t.isBST3(Integer.MIN_VALUE, Integer.MAX_VALUE));
 	}
 }

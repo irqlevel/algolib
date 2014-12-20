@@ -1,5 +1,9 @@
 package algolib;
 
+import java.lang.reflect.Array;
+import java.util.ArrayList;
+import java.util.List;
+
 public class ArrayHelper {
 	public static <T extends Comparable<T>> boolean isSorted(T arr[]) {
 		if (arr.length == 1)
@@ -39,5 +43,17 @@ public class ArrayHelper {
 				min = arr[i];
 		}
 		return min;
+	}
+		
+	public static <T> T[] toArray(final List<T> obj) {
+	    if (obj == null || obj.isEmpty()) {
+	        return null;
+	    }
+	    final T t = obj.get(0);
+	    final T[] res = (T[]) Array.newInstance(t.getClass(), obj.size());
+	    for (int i = 0; i < obj.size(); i++) {
+	        res[i] = obj.get(i);
+	    }
+	    return res;
 	}
 }

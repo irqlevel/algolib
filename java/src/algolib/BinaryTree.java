@@ -105,15 +105,16 @@ public class BinaryTree<K extends Comparable<K>, V> {
 		return isKeyInRange(root, min, max);
 	}
 	
+	private void print(BinaryTreeNode<K,V> node, String sep) {
+		System.out.println(sep + " k=" + node.key + " v=" + node.value);
+		if (node.left != null)
+			print(node.left, sep + " ");
+		if (node.right != null)
+			print(node.right, sep + " ");
+	}
+	
 	public void print() {
-		this.enumInOrder(new BinaryTreeNodeEnum<K, V>() {
-			@Override
-			public boolean enumClb(BinaryTreeNode<K, V> node, int height, Object context) {
-				// TODO Auto-generated method stub
-				System.out.println("Key=" + node.key + " Value=" + node.value + " Height=" + height);
-				return true;
-			}
-		}, null);
+		print(this.root, "");
 	}
 
 	public static <K extends Comparable<K>, V> BinaryTree<K, V> generate(Map<K, V> map) {
