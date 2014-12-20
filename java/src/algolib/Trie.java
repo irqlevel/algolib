@@ -1,5 +1,8 @@
 package algolib;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class Trie<V> {
 	private TrieNode<V> root = new TrieNode<V>();
 
@@ -54,6 +57,51 @@ public class Trie<V> {
 		print(root, "");
 	}
 	
+	public TrieNode<V> lookupPrefixNode(String prefix)
+	{
+		TrieNode<V> curr = root;
+		int i = 0;
+		
+		while (i < prefix.length()) {
+			curr = curr.childs.get(prefix.charAt(i));
+			if (curr == null)
+				return null;
+			i++;
+		}
+		
+		return curr;
+	}
+	
+	public List<String> getStringsByNode(TrieNode<V> root, String prefix)
+	{
+		TrieNode<V> child;
+		List<String> resList = new ArrayList<String>();
+		
+		for (Character c : root.childs.keySet()) {
+			child = root.childs.get(c);
+			if (child != null) {
+				List<String> subList = getStringsByNode(child, prefix + c);
+				for (String s : subList)
+					resList.add(s);
+			}
+		}
+		
+		if (root.value != null) {
+			resList.add(prefix);
+		}
+		
+		return resList;
+	}
+	
+	public List<String> autoComplete(String prefix) {
+		TrieNode<V> root;
+		root = lookupPrefixNode(prefix);
+		if (root == null)
+			return null;
+		
+		return getStringsByNode(root, prefix);
+	}
+	
 	public static void main(String args[]) throws Exception {
 		Trie<Integer> t = new Trie<Integer>();
 		String keys[] = new String[] {"ca", "car", "caret", "caka", "cakapet",
@@ -64,6 +112,12 @@ public class Trie<V> {
 		}
 		for (int i = 0; i < keys.length; i++) {
 			System.out.println("key[" + keys[i] + "]=" + t.find(keys[i]));
+		}
+		
+		String prefix = "cr";
+		System.out.println("autoComplete for " + prefix);
+		for (String s : t.autoComplete(prefix)) {
+			System.out.println("	" + s);
 		}
 	}
 }
