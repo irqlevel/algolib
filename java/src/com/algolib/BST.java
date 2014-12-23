@@ -1,6 +1,5 @@
 package com.algolib;
 
-import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -149,8 +148,6 @@ public class BST<K extends Comparable<K>, V> extends BinaryTree<K, V> {
 	}
 	
 	public static void main(String args[]) {
-		Rng rng = new Rng();
-		
 		BST<Integer, String> t = new BST<Integer, String>();
 		for (int i = 0; i < 100; i++) {
 			t.insert(i, "Petya");
