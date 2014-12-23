@@ -40,21 +40,62 @@ public class BST<K extends Comparable<K>, V> extends BinaryTree<K, V> {
 		return true;
 	}
 	
-	public V search(K key) {
+	public BinaryTreeNode<K, V> searchNode(K key) {
 		BinaryTreeNode<K, V> curr = root;
 		while (curr != null) {
 			if (key.compareTo(curr.key) == 0)
-				return curr.value;
+				break;
 			else if (key.compareTo(curr.key) < 0)
 				curr = curr.left;
 			else
 				curr = curr.right;
 		}
-		
-		return null;
+		return curr;
+	}
+	
+	public V search(K key) {
+		BinaryTreeNode<K, V> curr = searchNode(key);
+		return (curr != null) ? curr.value : null;
 	}
 	
 	public boolean remove(K key) {
+		BinaryTreeNode<K, V> curr = root, prev = null;
+		while (curr != null) {
+			if (key.compareTo(curr.key) == 0)
+				break;
+			else if (key.compareTo(curr.key) < 0) {
+				prev = curr;
+				curr = curr.left;
+			} else {
+				prev = curr;
+				curr = curr.right;
+			}
+		}
+		
+		if (curr == null)
+			return false;
+		
+		if (curr.left == null && curr.right == null) {
+			if (prev == null) {
+				root = null;
+			} else {
+				if (prev.left == curr)
+					prev.left = null;
+				else
+					prev.right = null;
+			}
+			return true;
+		}
+		
+		BinaryTreeNode<K, V> child = null;
+		if ((curr.left == null && ((child = curr.right) != null)) ||
+			(curr.right == null && ((child = curr.left) != null))) {
+			if (prev.left == curr)
+				prev.left = child;
+			else
+				prev.right = child;
+		}
+		
 		return false;
 	}
 
