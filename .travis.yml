@@ -1,0 +1,14 @@
+language: java
+jdk: 
+    - oraclejdk8
+      
+before_install:
+    - sudo apt-get update -qq
+
+script:
+    - cd java && mvn package
+
+notifications:
+  email:
+    on_success: change
+    on_failure: always
