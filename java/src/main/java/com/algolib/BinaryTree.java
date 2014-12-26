@@ -1,6 +1,5 @@
 package com.algolib;
 
-import java.security.SecureRandom;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -114,7 +113,8 @@ public class BinaryTree<K extends Comparable<K>, V> {
 	}
 	
 	public void print() {
-		print(this.root, "");
+		if (this.root != null)
+			print(this.root, "");
 	}
 
 	public static <K extends Comparable<K>, V> BinaryTree<K, V> generate(Map<K, V> map) {
@@ -135,12 +135,12 @@ public class BinaryTree<K extends Comparable<K>, V> {
 		return t;
 	}
 	
-	public static void main(String args[]) {
-		SecureRandom rnd = new SecureRandom();
+	public static void main(String args[]) throws Exception {
+		Rng rng = new Rng();
 		
 		Map<Integer, String> kvMap = new HashMap<Integer, String>();
 		for (int i = 0; i < 10; i++) {
-			kvMap.put(rnd.nextInt(), "Petya");
+			kvMap.put(rng.nextInt(), "Petya");
 		}
 		
 		BinaryTree<Integer, String> t = BinaryTree.generate(kvMap);

@@ -1,6 +1,5 @@
 package com.algolib;
 
-import java.security.SecureRandom;
 import java.util.Map;
 
 public class BinaryTreeNode<K extends Comparable<K>, V> {
@@ -18,13 +17,13 @@ public class BinaryTreeNode<K extends Comparable<K>, V> {
 	}
 	
 	public void genChilds(Map<K, V> map) {
-		SecureRandom rnd = new SecureRandom();
+		Rng rng = new Rng();
 		KeyValue<K, V> kv = Helper.popMap(map);
 		if (kv == null)
 			return;
 		
-		if (rnd.nextBoolean()) {
-			if (rnd.nextBoolean()) {
+		if (rng.nextBoolean()) {
+			if (rng.nextBoolean()) {
 				if (left == null) {
 					left = new BinaryTreeNode<K, V>(kv.key, kv.value);
 					kv = null;
@@ -53,7 +52,7 @@ public class BinaryTreeNode<K extends Comparable<K>, V> {
 				}
 			}
 		} else {
-			if (rnd.nextBoolean()) {
+			if (rng.nextBoolean()) {
 				if (left == null) {
 					left = new BinaryTreeNode<K, V>(kv.key, kv.value);
 					kv = null;

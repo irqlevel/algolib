@@ -36,6 +36,10 @@ public class Rng {
 		return a/b;
 	}
 	
+	public boolean nextBoolean() {
+		return (randInt(2) == 1) ? true : false;
+	}
+	
 	public int log2(int v) {
 		int res = 0;
 		while (v > 0) {
