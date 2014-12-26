@@ -15,7 +15,7 @@ hs_err_pid*
 *.log
 *.pyc
 # output/bin files
-target/
+java/target/
 
 #eclipse files
 #.classpath
@@ -24,4 +24,10 @@ target/
 #swap files
 *.swp
 
-/bin/
+java/bin/
+c/bin
+c/libs
+c/objs
+*.o
+*.a
+

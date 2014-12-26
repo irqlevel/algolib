@@ -198,6 +198,7 @@ public class BST<K extends Comparable<K>, V> extends BinaryTree<K, V> {
 		
 		return t;
 	}
+	
 	public static void main(String args[]) throws Exception {
 		BST<Integer, String> t = new BST<Integer, String>();
 		for (int i = 0; i < 100; i++) {

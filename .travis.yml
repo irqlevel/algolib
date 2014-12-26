@@ -4,9 +4,9 @@ jdk:
       
 before_install:
     - sudo apt-get update -qq
-
+    - sudo apt-get install gcc make
 script:
-    - cd java && mvn package
+    - make
 
 notifications:
   email:
