@@ -10,7 +10,7 @@ int main(int argc, char *argv[])
 		printf("cant create tree\n");
 		exit(-1);
 	}
-	printf("t=%p\n", t);
+	printf("t=%p, root=%p sz=%lu\n", t, t->root, sizeof(*t->root));
 	btree_delete(t);
 	return 0;
 }
