@@ -5,7 +5,7 @@
 
 int main(int argc, char *argv[])
 {
-	struct btree *t = btree_create(malloc, free, memset);
+	struct btree *t = btree_create(malloc, free, memset, memcmp, memcpy);
 	if (!t) {
 		printf("cant create tree\n");
 		exit(-1);
