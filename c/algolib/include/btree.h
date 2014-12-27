@@ -9,7 +9,7 @@ typedef void *	(*al_memset_t)(void *ptr, int value, size_t num);
 typedef int	(*al_memcmp_t)(const void *ptr1, const void *ptr2, size_t num);
 typedef void *	(*al_memcpy_t)(void *dst, const void *src, size_t num);
 
-#define BTREE_T	1365
+#define BTREE_NODE_KEYS 2047
 
 #pragma pack(push, 1)
 struct btree_key {
@@ -30,14 +30,13 @@ struct btree_link {
 	};
 };
 
-#define BTREE_NODE_PAD_BYTES 8
+#define BTREE_NODE_PAD 24
 
 struct btree_node {
-	struct btree_key	keys[2*BTREE_T-1];
-	struct btree_link	childs[2*BTREE_T];
-	struct btree_key	key;
-	struct btree_value	value;
-	u8			pad[BTREE_NODE_PAD_BYTES];
+	struct btree_key	keys[BTREE_NODE_KEYS];
+	struct btree_value	values[BTREE_NODE_KEYS];
+	struct btree_link	childs[BTREE_NODE_KEYS+1];
+	u8			pad[BTREE_NODE_PAD];
 };
 
 struct btree {
@@ -51,8 +50,6 @@ struct btree {
 
 #pragma pack(pop)
 
-
-_Static_assert(BTREE_NODE_PAD_BYTES < 2*(sizeof(struct btree_key) + sizeof(struct btree_link)), "more childs can be");
 
 _Static_assert(sizeof(struct btree_node) == 65536, "size is not correct");
 

@@ -72,28 +72,75 @@ static void btree_copy_value(struct btree *tree,
 	tree->memcpy(dst, src, sizeof(*dst));
 }
 
-
-static struct btree_node *btree_find_child(struct btree *btree,
-	struct btree_node *curr, struct btree_key *key)
+static int btree_node_key_index(struct btree *tree,
+	struct btree_node *node,
+	struct btree_key *key,
+	int *index)
 {
-	return NULL;
+	int i;
+	int num_keys = sizeof(node->keys)/sizeof(node->keys[0]);
+	int cmp;	
+ 	
+	cmp = btree_cmp_key(tree, key, &node->keys[0]);
+	if (cmp == 0) {
+		*index = 0;
+		return 0;
+	}
+
+	if (cmp < 0) {
+		*index = 0;
+		return 1;
+	}	
+
+	for (i = 1; i <	num_keys;
+		i++) {
+		cmp = btree_cmp_key(tree, key, &node->keys[i]);
+		if (cmp == 0) {
+			*index = i;
+			return 0;
+		}
+
+		if (cmp < 0) {
+			*index = i;
+			return 1;
+		}
+	}
+
+	*index = num_keys;		
+ 	return 1;
 }
 
-static struct btree_node *btree_find_node(struct btree *tree, struct btree_key *key)
+static int btree_find_node_key(struct btree *tree, struct btree_key *key,
+	struct btree_node **pnode)
 {
-	return btree_find_child(tree, tree->root, key);
+	struct btree_node *curr = tree->root;
+	int index;
+
+	*pnode = NULL;
+	if (!curr)
+		return -1;
+	while (curr != NULL) {
+		if (0 == btree_node_key_index(tree, curr, key, &index)) {
+			*pnode = curr;
+			return index;
+		}
+		curr = curr->childs[index].addr;
+	}
+
+	return -1;
 }
 
 struct btree_value *btree_find_value(struct btree *tree, struct btree_key *key)
 {
 	struct btree_node *node;
 	struct btree_value *value;
-	node = btree_find_node(tree, key);
-	if (!node)
+	int index;
+
+	index = btree_find_node_key(tree, key, &node);
+	if (index == -1)
 		return NULL;
-	if (0 != btree_cmp_key(tree, key, &node->key))
-		return NULL;
+
 	value = tree->malloc(sizeof(*value));
-	btree_copy_value(tree, value, &node->value);
+	btree_copy_value(tree, value, &node->values[index]);
 	return value;
 }
