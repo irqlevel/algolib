@@ -16,3 +16,4 @@ typedef __UINT64_TYPE__ u64;
 
 typedef __SIZE_TYPE__ size_t;
 
+#define ct_assert(e) extern char (*ct_assert(void)) [sizeof(char[1 - 2*!(e)])]
