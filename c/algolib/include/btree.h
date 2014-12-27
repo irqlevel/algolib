@@ -12,6 +12,7 @@ typedef void *	(*al_memcpy_t)(void *dst, const void *src, size_t num);
 #define BTREE_NODE_KEYS 2047
 
 #pragma pack(push, 1)
+
 struct btree_key {
 	u8 bytes[16];
 };
@@ -60,4 +61,14 @@ extern struct btree *btree_create(al_malloc_t malloc,
 		al_memcpy_t memcpy);
 
 extern void btree_delete(struct btree *tree);
+
+extern int btree_insert_key(struct btree *tree, struct btree_key *key,
+	struct btree_value *value);
+
+extern int btree_find_key(struct btree *tree,
+	struct btree_key *key,
+	struct btree_value *value);
+
+extern int btree_delete_key(struct btree *tree,
+	struct btree_key *key);
 

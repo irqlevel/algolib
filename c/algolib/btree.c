@@ -110,37 +110,65 @@ static int btree_node_key_index(struct btree *tree,
  	return 1;
 }
 
-static int btree_find_node_key(struct btree *tree, struct btree_key *key,
-	struct btree_node **pnode)
+static struct btree_node *btree_find_node_key(struct btree *tree,
+	struct btree_key *key,
+	int *pindex)
 {
 	struct btree_node *curr = tree->root;
 	int index;
 
-	*pnode = NULL;
-	if (!curr)
-		return -1;
 	while (curr != NULL) {
 		if (0 == btree_node_key_index(tree, curr, key, &index)) {
-			*pnode = curr;
-			return index;
+			*pindex = index;
+			break;
 		}
 		curr = curr->childs[index].addr;
 	}
 
+	return curr;
+}
+
+int btree_find_key(struct btree *tree,
+	struct btree_key *key,
+	struct btree_value *value)
+{
+	struct btree_node *node;
+	int index;
+
+	node = btree_find_node_key(tree, key, &index);
+	if (node == NULL)
+		return -1;
+
+	btree_copy_value(tree, value, &node->values[index]);
+	return 0;
+}
+
+static int btree_insert_node_key(struct btree *tree,
+	struct btree_node *node, struct btree_key *key,
+	struct btree_value *value)
+{
 	return -1;
 }
 
-struct btree_value *btree_find_value(struct btree *tree, struct btree_key *key)
+int btree_insert_key(struct btree *tree, struct btree_key *key,
+	struct btree_value *value)
 {
-	struct btree_node *node;
-	struct btree_value *value;
+	struct btree_node *curr = tree->root, *prev = NULL;
 	int index;
 
-	index = btree_find_node_key(tree, key, &node);
-	if (index == -1)
-		return NULL;
+	while (curr != NULL) {
+		if (0 == btree_node_key_index(tree, curr, key, &index)) {
+			btree_copy_value(tree, &curr->values[index], value);
+			return 0;
+		}
+		prev = curr;
+		curr = curr->childs[index].addr;
+	}
 
-	value = tree->malloc(sizeof(*value));
-	btree_copy_value(tree, value, &node->values[index]);
-	return value;
+	return btree_insert_node_key(tree, prev, key, value);
+}
+
+int btree_delete_key(struct btree *tree, struct btree_key *key)
+{
+	return -1;
 }
