@@ -24,12 +24,14 @@ struct btree_link {
 	};
 };
 
-#define BTREE_NODE_PAD 24
+#define BTREE_NODE_PAD 16
 
 struct btree_node {
 	struct btree_key	keys[BTREE_NODE_KEYS];
 	struct btree_value	values[BTREE_NODE_KEYS];
 	struct btree_link	childs[BTREE_NODE_KEYS+1];
+	u32			nr_keys;
+	u32			max_nr_keys;
 	u8			pad[BTREE_NODE_PAD];
 };
 
