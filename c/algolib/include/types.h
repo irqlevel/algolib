@@ -6,13 +6,9 @@
 #define NULL 0
 #endif
 
-#ifndef PAGE_SIZE
 #define PAGE_SIZE 4096
-#endif
-
-#ifndef ARRAY_SIZE
 #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
-#endif
+
 
 typedef __INT8_TYPE__	s8;
 typedef __INT16_TYPE__ s16;
@@ -26,4 +22,15 @@ typedef __UINT64_TYPE__ u64;
 
 typedef __SIZE_TYPE__ size_t;
 
-#define ct_assert(e) extern char (*ct_assert(void)) [sizeof(char[1 - 2*!(e)])]
+#define likely(x)       __builtin_expect(!!(x), 1)
+#define unlikely(x)     __builtin_expect(!!(x), 0)
+
+#define AL_BUG()		\
+do {				\
+	asm volatile("ud2");	\
+	do {			\
+	} while (1);		\
+} while (0)			\
+
+#define AL_BUG_ON(condition)				\
+	do { if (unlikely(condition)) AL_BUG(); } while (0)

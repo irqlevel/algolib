@@ -92,6 +92,7 @@ static int btree_node_key_next(struct btree_node *node,
 	
 	if (prev_index < -1 || prev_index >= nkeys) {
 		AL_LOG(AL_ERR, "invalid prev_index=%d", prev_index);
+		AL_BUG();
 		return -1;
 	}
 
@@ -116,6 +117,7 @@ static int btree_node_key_index(
 	first = btree_node_key_next(node, -1);
 	if (first < 0) {
 		AL_LOG(AL_ERR, "no any valid key in node %p", node);
+		AL_BUG();
 		return -1;
 	}
 
@@ -161,9 +163,9 @@ static struct btree_node *btree_find_node_key(struct btree *tree,
 
 	while (curr != NULL) {
 		int res = btree_node_key_index(curr, key, &index);
-		if (res < 0)
+		if (res < 0) {
 			return NULL;
-		else if (0 == res) {
+		} else if (0 == res) {
 			*pindex = index;
 			break;
 		} else {
