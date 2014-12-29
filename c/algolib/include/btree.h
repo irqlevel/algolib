@@ -2,7 +2,7 @@
 
 #include "types.h"
 
-#define BTREE_NODE_KEYS 2047
+#define BTREE_NODE_T 1024
 
 #pragma pack(push, 1)
 
@@ -24,14 +24,16 @@ struct btree_link {
 	};
 };
 
-#define BTREE_NODE_PAD 16
+#define BTREE_NODE_PAD 12
 
 struct btree_node {
-	struct btree_key	keys[BTREE_NODE_KEYS];
-	struct btree_value	values[BTREE_NODE_KEYS];
-	struct btree_link	childs[BTREE_NODE_KEYS+1];
+	struct btree_key	keys[2*BTREE_T-1];
+	struct btree_value	values[2*BTREE_T-1];
+	struct btree_link	childs[2*BTREE_T];
+	u32			leaf;
 	u32			nr_keys;
 	u32			max_nr_keys;
+	u32			t;
 	u8			pad[BTREE_NODE_PAD];
 };
 

@@ -12,6 +12,8 @@ static struct btree_node *btree_node_create(void)
 	}
 	al_memset(node, 0, sizeof(*node));
 	node->max_nr_keys = ARRAY_SIZE(node->keys);
+	node->leaf = 1;
+	node->t = (node->max_nr_keys + 1)/2;
 	AL_LOG(AL_INF, "node %p created", node);
 	return node;	
 }
@@ -19,7 +21,7 @@ static struct btree_node *btree_node_create(void)
 static void btree_node_delete(struct btree_node *node)
 {
 	al_free(node);
-	AL_LOG(AL_INF, "node %p deleted", node);
+	AL_LOG(AL_INF, "node %p leaf %d deleted", node, leaf);
 }
 
 struct btree *btree_create(void)
@@ -125,7 +127,12 @@ static struct btree_node *btree_find_node_key(struct btree *tree,
 			*pindex = index;
 			break;
 		} else {
-			curr = curr->childs[index].addr;
+			if (!curr->leaf)
+				curr = curr->childs[index].addr;
+			else {
+				curr = NULL;
+				break;
+			}
 		}
 	}
 
@@ -160,7 +167,7 @@ static void btree_node_swap_value(struct btree_node *node,
 	}
 }
 
-static int btree_node_place_key(struct btree_node *node,
+static int btree_node_put_key(struct btree_node *node,
 		struct btree_key *key, struct btree_value *value)
 {
 	int i;
@@ -182,12 +189,47 @@ static int btree_node_place_key(struct btree_node *node,
 	return 1;
 }
 
+static int btree_node_split_child(struct btree_node *node,
+		int child_index)
+{
+	struct btree_node *new;
+     	struct btree_node *child;
+	int i;
+
+	child = node->childs[child_index];
+	AL_BUG_ON(!btree_node_is_full(child));
+	new = btree_node_create();
+	if (!new)
+		return -1;
+	new->leaf = child->leaf;
+	for (i = 0; i < new->t - 1; i++) {
+		btree_copy_key(&new->keys[i], &child->keys[i + new->t];
+		btree_copy_values(&new->values[i], &child->values[i + new->t];
+	}
+
+	if (!child->leaf)
+		for (i = 0; i < new->t; i++)
+			new->childs[i] = child->childs[i + new->t];
+
+	child->nr_keys = new->t - 1;
+	for (i = node->nr_keys; i >= (child_index + 1); i--)
+		node->childs[i + 1] = node->childs[i];
+	node->childs[child_index + 1] = new;
+	for (i = node->nr_keys; i >= child_index; i--) {
+		btree_copy_key(&node->keys[i + 1], &node->keys[i]);
+		btree_copy_value(&node->values[i + 1], &node->values[i]);	
+	}
+	btree_copy_key(&node->keys[child_index], &child->keys[new->t]);
+	btree_copy_value(&node->values[i + 1], &node->values[i]);	
+	
+}
+
 static int btree_insert_node_key(struct btree *tree,
 	struct btree_node *node, struct btree_key *key,
 	struct btree_value *value)
 {
 	if (!btree_node_is_full(node))
-		return btree_node_place_key(node, key, value);
+		return btree_node_put_key(node, key, value);
 	AL_LOG(AL_ERR, "not implemented");
 	return -1;
 }
