@@ -15,5 +15,5 @@ Library of generic algorithms and data structures.
 - and more ...
 
 #### How to build:
-`cd java && mvn package`
+`make`
 
