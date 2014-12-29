@@ -6,10 +6,19 @@ static struct btree_node *btree_node_create(void)
 	struct btree_node *node;
 
 	node = al_malloc(sizeof(*node));
-	if (!node)
+	if (!node) {
+		AL_LOG(AL_ERR, "no memory");
 		return NULL;
+	}
 	al_memset(node, 0, sizeof(*node));
+	AL_LOG(AL_INF, "node %p created", node);
 	return node;	
+}
+
+static void btree_node_delete(struct btree_node *node)
+{
+	al_free(node);
+	AL_LOG(AL_INF, "node %p deleted", node);
 }
 
 struct btree *btree_create(void)
@@ -17,8 +26,10 @@ struct btree *btree_create(void)
 	struct btree *tree;
 
 	tree = al_malloc(sizeof(*tree));
-	if (!tree)
+	if (!tree) {
+		AL_LOG(AL_ERR, "no memory");
 		return NULL;
+	}
 
 	al_memset(tree, 0, sizeof(*tree));
 	tree->root = btree_node_create();
@@ -26,6 +37,7 @@ struct btree *btree_create(void)
 		goto fail;
 	}
 
+	AL_LOG(AL_INF, "tree %p created", tree);
 	return tree;
 fail:
 	btree_delete(tree);
@@ -35,8 +47,9 @@ fail:
 void btree_delete(struct btree *tree)
 {
 	if (tree->root)
-		al_free(tree->root);
+		btree_node_delete(tree->root);
 	al_free(tree);
+	AL_LOG(AL_INF, "tree %p deleted", tree);
 }
 
 static int btree_cmp_key(
@@ -77,8 +90,10 @@ static int btree_node_key_next(struct btree_node *node,
 	int nkeys = sizeof(node->keys)/sizeof(node->keys[0]);
 	int i;
 	
-	if (prev_index < -1 || prev_index >= nkeys)
+	if (prev_index < -1 || prev_index >= nkeys) {
+		AL_LOG(AL_ERR, "invalid prev_index=%d", prev_index);
 		return -1;
+	}
 
 	for (i = prev_index + 1; i < nkeys; i++) {
 		if (btree_key_is_zero(&node->keys[i]))
@@ -99,8 +114,10 @@ static int btree_node_key_index(
 	int cmp;	
 
 	first = btree_node_key_next(node, -1);
-	if (first < 0)
+	if (first < 0) {
+		AL_LOG(AL_ERR, "no any valid key in node %p", node);
 		return -1;
+	}
 
 	cmp = btree_cmp_key(key, &node->keys[first]);
 	if (cmp == 0) {
@@ -162,6 +179,7 @@ static int btree_insert_node_key(struct btree *tree,
 	struct btree_key *key,
 	struct btree_value *value)
 {
+	AL_LOG(AL_ERR, "not implemented");
 	return -1;
 }
 
@@ -171,8 +189,10 @@ int btree_insert_key(struct btree *tree, struct btree_key *key,
 	struct btree_node *curr = tree->root, *prev = NULL, *prevprev = NULL;
 	int index;
 
-	if (btree_key_is_zero(key))
+	if (btree_key_is_zero(key)) {
+		AL_LOG(AL_ERR, "key is zero");
 		return -1;
+	}
 
 	while (curr != NULL) {
 		int res = btree_node_key_index(curr, key, &index);
@@ -196,6 +216,7 @@ int btree_delete_key(struct btree *tree, struct btree_key *key)
 	if (btree_key_is_zero(key))
 		return -1;
 
+	AL_LOG(AL_ERR, "not implemented");
 	return -1;
 }
 
@@ -206,8 +227,10 @@ int btree_find_key(struct btree *tree,
 	struct btree_node *node;
 	int index;
 
-	if (btree_key_is_zero(key))
+	if (btree_key_is_zero(key)) {
+		AL_LOG(AL_ERR, "key is zero");
 		return -1;
+	}
 
 	node = btree_find_node_key(tree, key, &index);
 	if (node == NULL)

@@ -1,7 +1,17 @@
 #pragma once
 
+#include <stdarg.h>
+
 #ifndef NULL
 #define NULL 0
+#endif
+
+#ifndef PAGE_SIZE
+#define PAGE_SIZE 4096
+#endif
+
+#ifndef ARRAY_SIZE
+#define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
 #endif
 
 typedef __INT8_TYPE__	s8;
