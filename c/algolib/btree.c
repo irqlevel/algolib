@@ -220,45 +220,70 @@ static int btree_node_split_child(struct btree_node *node,
 		btree_copy_value(&node->values[i + 1], &node->values[i]);	
 	}
 	btree_copy_key(&node->keys[child_index], &child->keys[new->t]);
-	btree_copy_value(&node->values[i + 1], &node->values[i]);	
-	
+	btree_copy_value(&node->values[child_index], &node->values[new->t]);
+	node->nr_keys++;
+	return 0;	
 }
 
-static int btree_insert_node_key(struct btree *tree,
-	struct btree_node *node, struct btree_key *key,
+static int btree_node_insert_nonfull(struct btree_node *node,
+	struct btree_key *key,
 	struct btree_value *value)
 {
-	if (!btree_node_is_full(node))
-		return btree_node_put_key(node, key, value);
-	AL_LOG(AL_ERR, "not implemented");
-	return -1;
+	int i = node->nr_keys;
+	if (node->leaf) {
+		while (i >= 0 && btree_cmp_key(key, &node->keys[i]) < 0) {
+			btree_copy_key(&node->keys[i+1], &node->keys[i]);
+			btree_copy_value(&node->values[i+1], &node->keys[i]);
+			i--;
+		}
+		btree_copy_key(&node->keys[i+1], key);
+		btree_copy_value(&node->values[i+1], value);
+		node->nr_keys++;
+		return 0;
+	} else {
+		struct btree_node *child;
+		while (i >=0 && btree_cmp_key(key, &node->keys[i]) < 0)
+			i--;
+		i++;
+		child = node->childs[i];
+		if (btree_node_is_full(child)) {
+			if (bree_node_split_child(node, i) < 0)
+				return -1;
+			if (btree_cmp_key(key, &node->keys[i]) > 0)
+				i++;		
+		}
+		return btree_node_insert_nonfull(node->childs[i], key, value);
+	}
 }
 
 int btree_insert_key(struct btree *tree, struct btree_key *key,
 	struct btree_value *value)
 {
-	struct btree_node *curr = tree->root, *prev = NULL;
-	int index;
-	int match;
-
+	struct btree_node *root = tree->root;
 	if (btree_key_is_zero(key)) {
 		AL_LOG(AL_ERR, "key is zero");
 		return -1;
 	}
 
-	AL_BUG_ON(!curr);
-	while (curr != NULL) {
-		index = btree_node_key_index(curr, key, &match);
-		if (match) {
-			btree_copy_value(&curr->values[index], value);
-			return 1;
-		} else {
-			prev = curr;
-			curr = curr->childs[index].addr;
+	if (btree_node_is_full(root)) {
+		struct btree_node *new;
+		new = btree_node_create();
+		new->leaf = 0;
+		new->nr_keys = 0;
+		new->childs[0] = root;
+		if (btree_node_split_child(new, 0) < 0) {
+			btree_node_delete(new);
+			return -1;
 		}
+		if (btree_node_insert_nonfull(new, key, value) < 0) {
+			btree_node_delete(new);
+			return -1;
+		}
+		tree->root = new;
+		return 0;
+	} else {
+		return btree_node_insert_nonfull(root, key, value);
 	}
-
-	return btree_insert_node_key(tree, prev, key, value);
 }
 
 int btree_delete_key(struct btree *tree, struct btree_key *key)
