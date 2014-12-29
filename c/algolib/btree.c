@@ -72,16 +72,48 @@ static void btree_copy_value(struct btree *tree,
 	tree->memcpy(dst, src, sizeof(*dst));
 }
 
+static struct btree_key btree_zero_key = {{0,0,0,0,
+					0,0,0,0,
+					0,0,0,0,
+					0,0,0,0}};
+
+static int btree_key_is_zero(struct btree *tree, struct btree_key *key)
+{
+	return (0 == btree_cmp_key(tree, key, &btree_zero_key)) ? 1 : 0;
+}
+
+static int btree_node_key_next(struct btree *tree, struct btree_node *node,
+		int prev_index)
+{
+	int nkeys = sizeof(node->keys)/sizeof(node->keys[0]);
+	int i;
+	
+	if (prev_index < -1 || prev_index >= nkeys)
+		return -1;
+
+	for (i = prev_index + 1; i < nkeys; i++) {
+		if (btree_key_is_zero(tree, &node->keys[i]))
+			continue;
+		else
+			break;
+	}
+
+	return (i == nkeys) ? -1 : i;
+}
+
 static int btree_node_key_index(struct btree *tree,
 	struct btree_node *node,
 	struct btree_key *key,
 	int *index)
 {
-	int i;
-	int num_keys = sizeof(node->keys)/sizeof(node->keys[0]);
+	int curr, first, last;
 	int cmp;	
- 	
-	cmp = btree_cmp_key(tree, key, &node->keys[0]);
+
+	first = btree_node_key_next(tree, node, -1);
+	if (first < 0)
+		return -1;
+
+	cmp = btree_cmp_key(tree, key, &node->keys[first]);
 	if (cmp == 0) {
 		*index = 0;
 		return 0;
@@ -92,21 +124,25 @@ static int btree_node_key_index(struct btree *tree,
 		return 1;
 	}	
 
-	for (i = 1; i <	num_keys;
-		i++) {
-		cmp = btree_cmp_key(tree, key, &node->keys[i]);
+	curr = first;
+	while (1) {
+		last = curr;
+		curr = btree_node_key_next(tree, node, curr);
+		if (curr < 0)
+			break;
+		cmp = btree_cmp_key(tree, key, &node->keys[curr]);
 		if (cmp == 0) {
-			*index = i;
+			*index = curr;
 			return 0;
 		}
 
 		if (cmp < 0) {
-			*index = i;
+			*index = curr;
 			return 1;
 		}
 	}
 
-	*index = num_keys;		
+	*index = last + 1;		
  	return 1;
 }
 
@@ -118,11 +154,15 @@ static struct btree_node *btree_find_node_key(struct btree *tree,
 	int index;
 
 	while (curr != NULL) {
-		if (0 == btree_node_key_index(tree, curr, key, &index)) {
+		int res = btree_node_key_index(tree, curr, key, &index);
+		if (res < 0)
+			return NULL;
+		else if (0 == res) {
 			*pindex = index;
 			break;
+		} else {
+			curr = curr->childs[index].addr;
 		}
-		curr = curr->childs[index].addr;
 	}
 
 	return curr;
@@ -135,6 +175,9 @@ int btree_find_key(struct btree *tree,
 	struct btree_node *node;
 	int index;
 
+	if (btree_key_is_zero(tree, key))
+		return -1;
+
 	node = btree_find_node_key(tree, key, &index);
 	if (node == NULL)
 		return -1;
@@ -144,7 +187,8 @@ int btree_find_key(struct btree *tree,
 }
 
 static int btree_insert_node_key(struct btree *tree,
-	struct btree_node *node, struct btree_key *key,
+	struct btree_node *node, struct btree_node *parent, 
+	struct btree_key *key,
 	struct btree_value *value)
 {
 	return -1;
@@ -153,22 +197,29 @@ static int btree_insert_node_key(struct btree *tree,
 int btree_insert_key(struct btree *tree, struct btree_key *key,
 	struct btree_value *value)
 {
-	struct btree_node *curr = tree->root, *prev = NULL;
+	struct btree_node *curr = tree->root, *prev = NULL, *prevprev = NULL;
 	int index;
+
+	if (btree_key_is_zero(tree, key))
+		return -1;
 
 	while (curr != NULL) {
 		if (0 == btree_node_key_index(tree, curr, key, &index)) {
 			btree_copy_value(tree, &curr->values[index], value);
 			return 0;
 		}
+		prevprev = prev;
 		prev = curr;
 		curr = curr->childs[index].addr;
 	}
 
-	return btree_insert_node_key(tree, prev, key, value);
+	return btree_insert_node_key(tree, prev, prevprev, key, value);
 }
 
 int btree_delete_key(struct btree *tree, struct btree_key *key)
 {
+	if (btree_key_is_zero(tree, key))
+		return -1;
+
 	return -1;
 }
