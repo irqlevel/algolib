@@ -267,7 +267,7 @@ int btree_insert_key(struct btree *tree, struct btree_key *key,
 			return -1;
 		new2 = btree_node_create();
 		if (new2 == NULL) {
-			btree_node_delete(new2);
+			btree_node_delete(new);
 			return -1;
 		}
 
