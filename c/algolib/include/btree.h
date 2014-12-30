@@ -67,6 +67,6 @@ extern struct btree_value *btree_gen_value();
 extern char *btree_key_hex(struct btree_key *key);
 extern char *btree_value_hex(struct btree_value *value);
 extern void btree_log(struct btree *tree, int llevel);
-extern u64 btree_nr_keys(struct btree *tree);
+extern void btree_stats(struct btree *tree, u64 *nr_keys, u64 *nr_nodes);
 
 

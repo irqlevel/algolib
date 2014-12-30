@@ -235,9 +235,14 @@ cleanup:
 
 static int test_btree_stats_case(struct btree *t)
 {
+	u64 nr_keys, nr_nodes;
 	/* output some stats */
 	btree_log(t, AL_TST);
-	AL_LOG(AL_TST, "tree %p nr_keys=%lu", t, btree_nr_keys(t));
+	btree_stats(t, &nr_keys, &nr_nodes);
+
+	AL_LOG(AL_TST, "tree %p nr_keys=%lu nr_nodes=%lu",
+		t, nr_keys, nr_nodes);
+
 	return 0;
 }
 
@@ -293,16 +298,31 @@ static int test_btree_insert(int num_keys)
 	err = test_btree_insert_case(t, keys, values, num_keys, 0, 0);
 	if (err)
 		goto cleanup;
+	
+	/* output tree structures and stats */
+	err = test_btree_stats_case(t);
+	if (err)
+		goto cleanup;
 
 	/* insert keys again */
 	err = test_btree_insert_case(t, keys, values, num_keys, 0, 1);
 	if (err)
 		goto cleanup;
+	/* output tree structures and stats */
+	err = test_btree_stats_case(t);
+	if (err)
+		goto cleanup;
+
 
 	/* replace keys */
 	err = test_btree_insert_case(t, keys, values, num_keys, 1, 0);
 	if (err)
 		goto cleanup;
+	/* output tree structures and stats */
+	err = test_btree_stats_case(t);
+	if (err)
+		goto cleanup;
+
 	/* find keys */
 	err = test_btree_find_case(t, keys, values, num_keys);
 	if (err)
@@ -351,7 +371,7 @@ cleanup:
 static int test_btree()
 {
 	int rc;
-	rc = test_btree_insert(10000);
+	rc = test_btree_insert(100000);
 	if (rc)
 		return rc;
 
