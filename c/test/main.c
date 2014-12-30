@@ -120,13 +120,13 @@ static int test_btree_insert_case(struct btree *t, struct btree_key **keys,
 
 		err = btree_insert_key(t, keys[i], values[i], replace);
 		if (err && !fail_ok) {
-			AL_LOG(AL_ERR, "Cant insert key[%d] %s, rc=%d",
-					i, key_hex, err);
+			AL_LOG(AL_ERR, "Cant insert key[%d] %s rplc=%d rc=%d",
+					i, key_hex, replace, err);
 			goto cleanup;
 		}
 
-		AL_LOG(AL_TST, "Insert key[%d] %s -> %s, rc=%d",
-				i, key_hex, val_hex, err);
+		AL_LOG(AL_TST, "Insert key[%d] %s -> %s rplc=%d rc=%d",
+				i, key_hex, val_hex, replace, err);
 
 		al_free(key_hex);
 		key_hex = NULL;
@@ -307,7 +307,7 @@ cleanup:
 static int test_btree()
 {
 	int rc;
-	rc = test_btree_insert(3000);
+	rc = test_btree_insert(100000);
 	if (rc)
 		return rc;
 

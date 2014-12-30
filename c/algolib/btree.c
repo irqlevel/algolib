@@ -240,8 +240,11 @@ static int btree_node_insert_nonfull(struct btree_node *node,
 					}
 				}
 			}
-			/* key doesnt exists so place key value in sorted order */
-			while (i >= 0 && btree_cmp_key(key, &node->keys[i]) < 0) {
+			/* key doesnt exists so place key value in sorted
+			 * order
+			 */
+			while (i >= 0 && btree_cmp_key(key,
+						&node->keys[i]) < 0) {
 				btree_node_copy_kv(node, i + 1, node, i);
 				i--;
 			}
