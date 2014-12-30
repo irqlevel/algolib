@@ -91,81 +91,41 @@ static void prepare(void)
 	rt.time = ltime;
 	rt.random_buf = lrandom_buf;
 	al_init(&rt);
+	AL_LOG(AL_TST, "Prepared");
 }
 
-static int test_btree_insert(int num_keys)
+
+static int test_btree_insert_case(struct btree *t, struct btree_key **keys,
+		struct btree_value **values, int num_keys, int replace,
+		int fail_ok)
 {
-	struct btree *t = NULL;
-	struct btree_key **keys = NULL;
-	struct btree_value **values = NULL;
-	struct btree_value *value = NULL;
 	int i;
 	int err;
 	char *key_hex = NULL, *val_hex = NULL;
-
-	keys = malloc(num_keys*sizeof(struct btree_key *));
-	if (!keys) {
-		printf("cant malloc keys\n");
-		err = -ENOMEM;
-		goto cleanup;
-	}
-	memset(keys, 0, num_keys*sizeof(struct btree_key *));
-
-	values = malloc(num_keys*sizeof(struct btree_value *));
-	if (!values) {
-		printf("cant malloc values\n");
-		err = -ENOMEM;
-		goto cleanup;
-	}
-	memset(values, 0, num_keys*sizeof(struct btree_value *));
-
-	for (i = 0; i < num_keys; i++) {
-		keys[i] = btree_gen_key();
-		if (!keys[i]) {
-			printf("cant gen key[%d]\n", i);
-			err = -ENOMEM;
-			goto cleanup;
-		}
-		values[i] = btree_gen_value();
-		if (!values[i]) {
-			printf("cant gen value[%d]\n", i);
-			err = -ENOMEM;
-			goto cleanup;
-		}
-	}
-
-	t = btree_create();
-	if (!t) {
-		printf("cant create tree\n");
-		err = -ENOMEM;
-		goto cleanup;
-	}
-	printf("t=%p, root=%p sz=%zu\n",
-			t, t->root, sizeof(*t->root));
 
 	/* insert keys */
 	for (i = 0; i < num_keys; i++) {
 		key_hex = btree_key_hex(keys[i]);
 		if (!key_hex) {
-			printf("cant get key hex\n");
+			AL_LOG(AL_ERR, "cant get key hex");
 			err = -ENOMEM;
 			goto cleanup;
 		}
 		val_hex = btree_value_hex(values[i]);
 		if (!val_hex) {
-			printf("cant get val hex\n");
+			AL_LOG(AL_ERR, "cant get val hex");
 			err = -ENOMEM;
 			goto cleanup;
 		}
 
-		err = btree_insert_key(t, keys[i], values[i]);
-		if (err) {
-			printf("Cant insert key[%d] %s, rc=%d\n",
+		err = btree_insert_key(t, keys[i], values[i], replace);
+		if (err && !fail_ok) {
+			AL_LOG(AL_ERR, "Cant insert key[%d] %s, rc=%d",
 					i, key_hex, err);
 			goto cleanup;
 		}
 
-		printf("Insert key[%d] %s -> %s, rc=%d\n",
+		AL_LOG(AL_TST, "Insert key[%d] %s -> %s, rc=%d",
 				i, key_hex, val_hex, err);
 
 		al_free(key_hex);
@@ -174,33 +134,49 @@ static int test_btree_insert(int num_keys)
 		val_hex = NULL;
 	}
 
-	/* now check keys exists in btree */
+	err = 0;
+cleanup:
+	if (key_hex)
+		al_free(key_hex);
+	if (val_hex)
+		al_free(val_hex);
+	return err;	
+}
+
+static int test_btree_find_case(struct btree *t, struct btree_key **keys,
+		struct btree_value **values, int num_keys)
+{
+	int i;
+	int err;
+	char *key_hex = NULL, *val_hex = NULL;
+	struct btree_value *value = NULL;
+
 	for (i = 0; i < num_keys; i++) {
 		key_hex = btree_key_hex(keys[i]);
 		if (!key_hex) {
-			printf("cant get key hex\n");
+			AL_LOG(AL_ERR, "cant get key hex");
 			err = -ENOMEM;
 			goto cleanup;
 		}
 
 		err = btree_find_key(t, keys[i], &value);
 		if (err) {
-			printf("Cant found key[%d] %s, rc=%d\n",
+			AL_LOG(AL_ERR, "Cant found key[%d] %s, rc=%d",
 					i, key_hex, err);
 			goto cleanup;
 		}
 
 		val_hex = btree_value_hex(value);
 		if (!val_hex) {
-			printf("cant get val hex\n");
+			AL_LOG(AL_ERR, "cant get val hex");
 			err = -ENOMEM;
 			goto cleanup;
 		}
 
-		printf("Found key[%d] %s -> %s, rc=%d\n",
+		AL_LOG(AL_TST, "Found key[%d] %s -> %s, rc=%d",
 				i, key_hex, val_hex, err);
 		if (0 != memcmp(values[i], value, sizeof(*value))) {
-			printf("value mismatch\n");
+			AL_LOG(AL_ERR, "value mismatch");
 			err = -EINVAL;
 			goto cleanup;
 		}
@@ -212,10 +188,6 @@ static int test_btree_insert(int num_keys)
 		val_hex = NULL;
 	}
 
-	/* output some stats */
-	btree_log(t);
-	printf("tree nr_keys=%lu\n", btree_nr_keys(t));
-
 	err = 0;
 cleanup:
 	if (value)
@@ -224,6 +196,94 @@ cleanup:
 		al_free(key_hex);
 	if (val_hex)
 		al_free(val_hex);
+	return err;	
+}
+
+static int test_btree_stats_case(struct btree *t)
+{
+	/* output some stats */
+	btree_log(t, AL_TST);
+	AL_LOG(AL_TST, "tree %p nr_keys=%lu", t, btree_nr_keys(t));
+	return 0;
+}
+
+static int test_btree_insert(int num_keys)
+{
+	struct btree *t = NULL;
+	struct btree_key **keys = NULL;
+	struct btree_value **values = NULL;
+	int i;
+	int err;
+
+	keys = malloc(num_keys*sizeof(struct btree_key *));
+	if (!keys) {
+		AL_LOG(AL_ERR, "cant malloc keys");
+		err = -ENOMEM;
+		goto cleanup;
+	}
+	memset(keys, 0, num_keys*sizeof(struct btree_key *));
+
+	values = malloc(num_keys*sizeof(struct btree_value *));
+	if (!values) {
+		AL_LOG(AL_ERR,"cant malloc values");
+		err = -ENOMEM;
+		goto cleanup;
+	}
+	memset(values, 0, num_keys*sizeof(struct btree_value *));
+
+	for (i = 0; i < num_keys; i++) {
+		keys[i] = btree_gen_key();
+		if (!keys[i]) {
+			AL_LOG(AL_ERR, "cant gen key[%d]", i);
+			err = -ENOMEM;
+			goto cleanup;
+		}
+		values[i] = btree_gen_value();
+		if (!values[i]) {
+			AL_LOG(AL_ERR, "cant gen value[%d]", i);
+			err = -ENOMEM;
+			goto cleanup;
+		}
+	}
+
+	t = btree_create();
+	if (!t) {
+		AL_LOG(AL_ERR, "cant create tree");
+		err = -ENOMEM;
+		goto cleanup;
+	}
+	AL_LOG(AL_TST, "t=%p, root=%p sz=%zu",
+			t, t->root, sizeof(*t->root));
+
+	/* insert keys */
+	err = test_btree_insert_case(t, keys, values, num_keys, 0, 0);
+	if (err)
+		goto cleanup;
+
+	/* insert keys again */
+	err = test_btree_insert_case(t, keys, values, num_keys, 0, 1);
+	if (err)
+		goto cleanup;
+
+	/* replace keys */
+	err = test_btree_insert_case(t, keys, values, num_keys, 1, 0);
+	if (err)
+		goto cleanup;
+	/* find keys */
+	err = test_btree_find_case(t, keys, values, num_keys);
+	if (err)
+		goto cleanup;
+	/* output tree structures and stats */
+	err = test_btree_stats_case(t);
+	if (err)
+		goto cleanup;
+
+	AL_LOG(AL_TST, "PASSED");
+
+	err = 0;
+cleanup:
+	if (err)
+		AL_LOG(AL_TST, "FAILED");
 
 	if (values) {
 		for (i = 0; i < num_keys; i++)
@@ -247,7 +307,7 @@ cleanup:
 static int test_btree()
 {
 	int rc;
-	rc = test_btree_insert(100000);
+	rc = test_btree_insert(3000);
 	if (rc)
 		return rc;
 

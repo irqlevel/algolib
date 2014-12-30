@@ -1,6 +1,6 @@
 #include <include/crt.h>
 
-static char *al_log_level_s[] = {"INV", "DBG", "INF" , "WRN" , "ERR", "MAX"};
+static char *al_log_level_s[] = {"INV", "DBG", "INF" , "WRN" , "ERR", "TST", "MAX"};
 
 static struct al_crt g_rt;
 

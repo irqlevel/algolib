@@ -58,7 +58,8 @@ extern void al_init(struct al_crt *ctx);
 #define AL_INF 2
 #define AL_WRN 3
 #define AL_ERR 4
-#define AL_MAX 5
+#define AL_TST 5
+#define AL_MAX 6
 
 #define AL_LOG_ENABLED	1
 #define AL_LOG_SRC	1

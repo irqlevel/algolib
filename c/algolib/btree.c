@@ -219,13 +219,28 @@ static int btree_node_split_child(struct btree_node *node,
 
 static int btree_node_insert_nonfull(struct btree_node *node,
 	struct btree_key *key,
-	struct btree_value *value)
+	struct btree_value *value,
+	int replace)
 {
 	int i;
-
 	while (1) {
 		i = node->nr_keys - 1;
 		if (node->leaf) {
+			int j;
+			/* if key exists replace value */
+			for (j = 0; j < node->nr_keys; j++) {
+				if (btree_cmp_key(key, &node->keys[j]) == 0) {
+					if (replace) {
+						btree_copy_value(
+							&node->values[j],
+							value);
+						return 0;
+					} else {
+						return -1;
+					}
+				}
+			}
+			/* key doesnt exists so place key value in sorted order */
 			while (i >= 0 && btree_cmp_key(key, &node->keys[i]) < 0) {
 				btree_node_copy_kv(node, i + 1, node, i);
 				i--;
@@ -252,7 +267,8 @@ static int btree_node_insert_nonfull(struct btree_node *node,
 }
 
 int btree_insert_key(struct btree *tree, struct btree_key *key,
-	struct btree_value *value)
+	struct btree_value *value,
+	int replace)
 {
 	struct btree_node *root = tree->root;
 	if (btree_key_is_zero(key)) {
@@ -270,14 +286,14 @@ int btree_insert_key(struct btree *tree, struct btree_key *key,
 			btree_node_delete(new);
 			return -1;
 		}
-		if (btree_node_insert_nonfull(new, key, value) < 0) {
+		if (btree_node_insert_nonfull(new, key, value, replace) < 0) {
 			btree_node_delete(new);
 			return -1;
 		}
 		tree->root = new;
 		return 0;
 	} else {
-		return btree_node_insert_nonfull(root, key, value);
+		return btree_node_insert_nonfull(root, key, value, replace);
 	}
 }
 
@@ -338,19 +354,19 @@ int btree_find_key(struct btree *tree,
 	return 0;
 }
 
-static void btree_log_node(struct btree_node *node, u32 height)
+static void btree_log_node(struct btree_node *node, u32 height, int llevel)
 {
 	struct btree_node *child;
 	int i;
 
-	AL_LOG(AL_INF, "node %p nr_keys %d leaf %d height %u",
+	AL_LOG(llevel, "node %p nr_keys %d leaf %d height %u",
 			node, node->nr_keys, node->leaf, height);
 
 	if (node->nr_keys) {
 		for (i = 0; i < node->nr_keys + 1; i++) {
 			child = node->childs[i].addr;
 			if (child != NULL)
-				btree_log_node(child, height+1);
+				btree_log_node(child, height+1, llevel);
 		}
 	}
 }
@@ -378,7 +394,7 @@ u64 btree_nr_keys(struct btree *tree)
 	return nr_keys;
 }
 
-void btree_log(struct btree *tree)
+void btree_log(struct btree *tree, int llevel)
 {
-	btree_log_node(tree->root, 1);
+	btree_log_node(tree->root, 1, llevel);
 }
