@@ -137,37 +137,6 @@ static int btree_node_is_full(struct btree_node *node)
 	return (node->max_nr_keys == node->nr_keys) ? 1 : 0;
 }
 
-
-/*
-static void btree_node_swap_key(struct btree_node *node,
-		int i, int j)
-{
-	AL_BUG_ON(i < 0 || j < 0 || i >= node->max_nr_keys ||
-		       j >= node->max_nr_keys);
-
-	if (i != j) {
-		struct btree_key tmp;
-		btree_copy_key(&tmp, &node->keys[i]);
-		btree_copy_key(&node->keys[i], &node->keys[j]);
-		btree_copy_key(&node->keys[j], &tmp);		
-	}
-}
-
-static void btree_node_swap_value(struct btree_node *node,
-		int i, int j)
-{
-	AL_BUG_ON(i < 0 || j < 0 || i >= node->max_nr_keys ||
-		       j >= node->max_nr_keys);
-
-	if (i != j) {
-		struct btree_value tmp;
-		btree_copy_value(&tmp, &node->values[i]);
-		btree_copy_value(&node->values[i], &node->values[j]);
-		btree_copy_value(&node->values[j], &tmp);
-	}
-}
-*/
-
 static void btree_node_copy_kv(struct btree_node *dst, int dst_index,
 	struct btree_node *src, int src_index)
 {
