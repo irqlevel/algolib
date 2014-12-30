@@ -93,62 +93,161 @@ static void prepare(void)
 	al_init(&rt);
 }
 
-static int test_btree_insert()
+static int test_btree_insert(int num_keys)
 {
-	struct btree *t;
-	struct btree_key *key;
-	struct btree_value *value;
+	struct btree *t = NULL;
+	struct btree_key **keys = NULL;
+	struct btree_value **values = NULL;
+	struct btree_value *value = NULL;
 	int i;
-	char *key_hex;
+	int err;
+	char *key_hex = NULL, *val_hex = NULL;
+
+	keys = malloc(num_keys*sizeof(struct btree_key *));
+	if (!keys) {
+		printf("cant malloc keys\n");
+		err = -ENOMEM;
+		goto cleanup;
+	}
+	memset(keys, 0, num_keys*sizeof(struct btree_key *));
+
+	values = malloc(num_keys*sizeof(struct btree_value *));
+	if (!values) {
+		printf("cant malloc values\n");
+		err = -ENOMEM;
+		goto cleanup;
+	}
+	memset(values, 0, num_keys*sizeof(struct btree_value *));
+
+	for (i = 0; i < num_keys; i++) {
+		keys[i] = btree_gen_key();
+		if (!keys[i]) {
+			printf("cant gen key[%d]\n", i);
+			err = -ENOMEM;
+			goto cleanup;
+		}
+		values[i] = btree_gen_value();
+		if (!values[i]) {
+			printf("cant gen value[%d]\n", i);
+			err = -ENOMEM;
+			goto cleanup;
+		}
+	}
 
 	t = btree_create();
 	if (!t) {
 		printf("cant create tree\n");
-		return -1;
+		err = -ENOMEM;
+		goto cleanup;
 	}
-	printf("t=%p, root=%p sz=%zu\n", t, t->root, sizeof(*t->root));
+	printf("t=%p, root=%p sz=%zu\n",
+			t, t->root, sizeof(*t->root));
 
-	for (i = 0; i < 100000; i++) {
-		key = btree_gen_key();
-		value = btree_gen_value();
-		key_hex = btree_key_hex(key);
-		if (!key || !value) {
-			printf("cant gen key value\n");
-			return -1;
-		}
-
-		key_hex = btree_key_hex(key);
+	/* insert keys */
+	for (i = 0; i < num_keys; i++) {
+		key_hex = btree_key_hex(keys[i]);
 		if (!key_hex) {
 			printf("cant get key hex\n");
-			return -1;
+			err = -ENOMEM;
+			goto cleanup;
+		}
+		val_hex = btree_value_hex(values[i]);
+		if (!val_hex) {
+			printf("cant get val hex\n");
+			err = -ENOMEM;
+			goto cleanup;
 		}
 
-		printf("inserting key[%d] %s\n", i, key_hex);
-		if (btree_insert_key(t, key, value)) {
-			char *key_hex = btree_key_hex(key);
-			if (!key_hex) {
-				printf("cant get key hex\n");
-				return -1;
-			}
-			printf("cant insert key %s\n", key_hex);
-			if (key_hex)
-				al_free(key_hex);
+		err = btree_insert_key(t, keys[i], values[i]);
+		if (err) {
+			printf("Cant insert key[%d] %s, rc=%d\n",
+					i, key_hex, err);
+			goto cleanup;
 		}
-		al_free(key);
-		al_free(value);
+
+		printf("Insert key[%d] %s -> %s, rc=%d\n",
+				i, key_hex, val_hex, err);
+
 		al_free(key_hex);
+		key_hex = NULL;
+		al_free(val_hex);
+		val_hex = NULL;
 	}
 
+	/* now check keys exists in btree */
+	for (i = 0; i < num_keys; i++) {
+		key_hex = btree_key_hex(keys[i]);
+		if (!key_hex) {
+			printf("cant get key hex\n");
+			err = -ENOMEM;
+			goto cleanup;
+		}
+
+		err = btree_find_key(t, keys[i], &value);
+		if (err) {
+			printf("Cant found key[%d] %s, rc=%d\n",
+					i, key_hex, err);
+			goto cleanup;
+		}
+
+		val_hex = btree_value_hex(value);
+		if (!val_hex) {
+			printf("cant get val hex\n");
+			err = -ENOMEM;
+			goto cleanup;
+		}
+
+		printf("Found key[%d] %s -> %s, rc=%d\n",
+				i, key_hex, val_hex, err);
+		if (0 != memcmp(values[i], value, sizeof(*value))) {
+			printf("value mismatch\n");
+			err = -EINVAL;
+			goto cleanup;
+		}
+		al_free(value);
+		value = NULL;
+		al_free(key_hex);
+		key_hex = NULL;
+		al_free(val_hex);
+		val_hex = NULL;
+	}
+
+	/* output some stats */
 	btree_log(t);
 	printf("tree nr_keys=%lu\n", btree_nr_keys(t));
-	btree_delete(t);
+
+	err = 0;
+cleanup:
+	if (value)
+		al_free(value);
+	if (key_hex)
+		al_free(key_hex);
+	if (val_hex)
+		al_free(val_hex);
+
+	if (values) {
+		for (i = 0; i < num_keys; i++)
+			if (values[i])
+				al_free(values[i]);
+		free(values);
+	}
+
+	if (keys) {
+		for (i = 0; i < num_keys; i++)
+			if (keys[i])
+				al_free(keys[i]);
+		free(keys);
+	}
+
+	if (t)
+		btree_delete(t);
 	return 0;
 }
 
 static int test_btree()
 {
 	int rc;
-	rc = test_btree_insert();
+	rc = test_btree_insert(100000);
 	if (!rc)
 		return rc;
 

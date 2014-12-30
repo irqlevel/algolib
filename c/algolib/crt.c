@@ -110,7 +110,7 @@ void al_log(int level, const char *file, int line, const char *func,
 	get_rt()->time(&tm);
 
 	al_log_write_fmt(&pos,&left,
-		"%04d-%02d-%02d %02d:%02d:%02d.%.6ld %s p%u %s %u %s() ",
+		"%04d-%02d-%02d %02d:%02d:%02d.%.06d %s p%u %s %u %s() ",
 		1900+tm.year, tm.mon+1,
 		tm.day, tm.hour, tm.min, tm.sec,
 		tm.usec, level_s, get_rt()->getpid(),

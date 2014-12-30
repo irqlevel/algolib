@@ -56,7 +56,7 @@ extern int btree_insert_key(struct btree *tree, struct btree_key *key,
 
 extern int btree_find_key(struct btree *tree,
 	struct btree_key *key,
-	struct btree_value *value);
+	struct btree_value **value);
 
 extern int btree_delete_key(struct btree *tree,
 	struct btree_key *key);
