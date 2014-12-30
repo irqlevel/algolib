@@ -323,6 +323,7 @@ int btree_node_leaf_delete_key(struct btree_node *node,
 {
 	int i;
 
+	AL_BUG_ON(!node->leaf);
 	AL_BUG_ON(btree_cmp_key(&node->keys[index], key) != 0);
 	
 	for (i = (index + 1); i < node->nr_keys; i++) {

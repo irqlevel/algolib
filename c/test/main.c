@@ -351,7 +351,7 @@ cleanup:
 static int test_btree()
 {
 	int rc;
-	rc = test_btree_insert(2000);
+	rc = test_btree_insert(10000);
 	if (rc)
 		return rc;
 
