@@ -199,6 +199,40 @@ cleanup:
 	return err;	
 }
 
+static int test_btree_delete_case(struct btree *t, struct btree_key **keys,
+		struct btree_value **values, int num_keys)
+{
+	int i;
+	int err;
+	char *key_hex = NULL;
+
+	for (i = 0; i < num_keys; i++) {
+		key_hex = btree_key_hex(keys[i]);
+		if (!key_hex) {
+			AL_LOG(AL_ERR, "cant get key hex");
+			err = -ENOMEM;
+			goto cleanup;
+		}
+
+		err = btree_delete_key(t, keys[i]);
+		if (err) {
+			AL_LOG(AL_ERR, "Cant delete key[%d] %s, rc=%d",
+					i, key_hex, err);
+			goto cleanup;
+		}
+		AL_LOG(AL_TST, "Delete key[%d] %s, rc=%d", i, key_hex, err);
+		al_free(key_hex);
+		key_hex = NULL;
+	}
+
+	err = 0;
+cleanup:
+	if (key_hex)
+		al_free(key_hex);
+	return err;	
+}
+
+
 static int test_btree_stats_case(struct btree *t)
 {
 	/* output some stats */
@@ -278,6 +312,16 @@ static int test_btree_insert(int num_keys)
 	if (err)
 		goto cleanup;
 
+	/* delete keys */
+	err = test_btree_delete_case(t, keys, values, num_keys);
+	if (err)
+		goto cleanup;
+	
+	/* output tree structures and stats */
+	err = test_btree_stats_case(t);
+	if (err)
+		goto cleanup;
+
 	AL_LOG(AL_TST, "PASSED");
 
 	err = 0;
@@ -307,7 +351,7 @@ cleanup:
 static int test_btree()
 {
 	int rc;
-	rc = test_btree_insert(100000);
+	rc = test_btree_insert(2000);
 	if (rc)
 		return rc;
 

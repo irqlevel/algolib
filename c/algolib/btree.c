@@ -269,15 +269,6 @@ int btree_insert_key(struct btree *tree, struct btree_key *key,
 	}
 }
 
-int btree_delete_key(struct btree *tree, struct btree_key *key)
-{
-	if (btree_key_is_zero(key))
-		return -1;
-
-	AL_LOG(AL_ERR, "not implemented");
-	return -1;
-}
-
 static struct btree_node *btree_find_node_key(struct btree_node *node,
 		struct btree_key *key, int *pindex)
 {
@@ -324,6 +315,40 @@ int btree_find_key(struct btree *tree,
 	*pvalue = value;
 
 	return 0;
+}
+
+int btree_node_leaf_delete_key(struct btree_node *node,
+		struct btree_key *key,
+		int index)
+{
+	int i;
+
+	AL_BUG_ON(btree_cmp_key(&node->keys[index], key) != 0);
+	
+	for (i = (index + 1); i < node->nr_keys; i++) {
+		btree_node_copy_kv(node, i-1, node, i);	
+	}
+	node->nr_keys--;
+	return 0;
+}
+
+int btree_delete_key(struct btree *tree, struct btree_key *key)
+{
+	struct btree_node *node;
+	int index;
+
+	if (btree_key_is_zero(key))
+		return -1;
+
+	node = btree_find_node_key(tree->root, key, &index);
+	if (node == NULL)
+		return -1;
+
+	if (node->leaf)
+		return btree_node_leaf_delete_key(node, key, index);
+
+	AL_LOG(AL_ERR, "not implemented");
+	return -1;
 }
 
 static void btree_log_node(struct btree_node *node, u32 height, int llevel)
