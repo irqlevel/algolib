@@ -218,30 +218,33 @@ static int btree_node_insert_nonfull(struct btree_node *node,
 	struct btree_key *key,
 	struct btree_value *value)
 {
-	int i = node->nr_keys - 1;
-	if (node->leaf) {
-		while (i >= 0 && btree_cmp_key(key, &node->keys[i]) < 0) {
-			btree_node_copy_kv(node, i + 1, node, i);
-			i--;
+	int i;
+
+	while (1) {
+		i = node->nr_keys - 1;
+		if (node->leaf) {
+			while (i >= 0 && btree_cmp_key(key, &node->keys[i]) < 0) {
+				btree_node_copy_kv(node, i + 1, node, i);
+				i--;
+			}
+			btree_copy_key(&node->keys[i+1], key);
+			btree_copy_value(&node->values[i+1], value);
+			node->nr_keys++;
+			return 0;
+		} else {
+			struct btree_node *child;
+			while (i >=0 && btree_cmp_key(key, &node->keys[i]) < 0)
+				i--;
+			i++;
+			child = node->childs[i].addr;
+			if (btree_node_is_full(child)) {
+				if (btree_node_split_child(node, i) < 0)
+					return -1;
+				if (btree_cmp_key(key, &node->keys[i]) > 0)
+					i++;		
+			}
+			node = node->childs[i].addr;
 		}
-		btree_copy_key(&node->keys[i+1], key);
-		btree_copy_value(&node->values[i+1], value);
-		node->nr_keys++;
-		return 0;
-	} else {
-		struct btree_node *child;
-		while (i >=0 && btree_cmp_key(key, &node->keys[i]) < 0)
-			i--;
-		i++;
-		child = node->childs[i].addr;
-		if (btree_node_is_full(child)) {
-			if (btree_node_split_child(node, i) < 0)
-				return -1;
-			if (btree_cmp_key(key, &node->keys[i]) > 0)
-				i++;		
-		}
-		return btree_node_insert_nonfull(node->childs[i].addr,
-				key, value);
 	}
 }
 
