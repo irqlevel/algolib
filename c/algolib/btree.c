@@ -14,7 +14,10 @@ static struct btree_node *btree_node_create(void)
 	al_memset(node, 0, sizeof(*node));
 	node->max_nr_keys = ARRAY_SIZE(node->keys);
 	node->leaf = 0;
+
+	AL_BUG_ON((node->max_nr_keys + 1) & 1);
 	node->t = (node->max_nr_keys + 1)/2;
+
 	AL_LOG(AL_DBG, "node %p created", node);
 	return node;	
 }
