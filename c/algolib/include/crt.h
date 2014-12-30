@@ -25,6 +25,7 @@ typedef int (*al_vsnprintf_t)(char *s, size_t n, const char *fmt, va_list arg);
 
 typedef char * (*al_strrchr_t)(const char *s, int c);
 typedef u32 (*al_getpid_t)(void);
+typedef int (*al_random_buf_t)(void *ptr, size_t size);
 
 struct al_crt {
 	al_malloc_t	malloc;
@@ -37,6 +38,7 @@ struct al_crt {
 	al_vsnprintf_t	vsnprintf;
 	al_strrchr_t	strrchr;
 	al_getpid_t	getpid;
+	al_random_buf_t random_buf;
 };
 
 extern void *al_malloc(size_t size);
@@ -44,6 +46,7 @@ extern void al_free(void *ptr);
 extern void *al_memset(void *ptr, int value, size_t num);
 extern int al_memcmp(const void *ptr1, const void *ptr2, size_t num);
 extern void *al_memcpy(void *dst, const void *src, size_t num);
+extern int al_random_buf(void *ptr, size_t size);
 
 extern void al_log(int level, const char *file, int line, const char *func,
 	const char *fmt, ...);

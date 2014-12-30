@@ -13,7 +13,8 @@ struct btree_key {
 struct btree_value {
 	union {
 		u64 off;
-		void *value;
+		void *addr;
+		u64 value;
 	};
 };
 
@@ -59,4 +60,13 @@ extern int btree_find_key(struct btree *tree,
 
 extern int btree_delete_key(struct btree *tree,
 	struct btree_key *key);
+
+extern struct btree_key *btree_gen_key();
+extern struct btree_value *btree_gen_value();
+
+extern char *btree_key_hex(struct btree_key *key);
+extern char *btree_value_hex(struct btree_value *value);
+extern void btree_log(struct btree *tree);
+extern u64 btree_nr_keys(struct btree *tree);
+
 

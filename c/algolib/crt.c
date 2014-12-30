@@ -16,6 +16,7 @@ void al_init(struct al_crt *rt)
 	g_rt.vsnprintf = rt->vsnprintf;
 	g_rt.strrchr = rt->strrchr;
 	g_rt.getpid = rt->getpid;
+	g_rt.random_buf = rt->random_buf;
 }
 
 static struct al_crt *get_rt() {
@@ -26,6 +27,11 @@ void *al_malloc(size_t size)
 {
 	return get_rt()->malloc(size);
 
+}
+
+int al_random_buf(void *ptr, size_t size)
+{
+	return get_rt()->random_buf(ptr, size);
 }
 
 void al_free(void *ptr)
