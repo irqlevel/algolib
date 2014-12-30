@@ -248,7 +248,7 @@ static int test_btree()
 {
 	int rc;
 	rc = test_btree_insert(100000);
-	if (!rc)
+	if (rc)
 		return rc;
 
 	return 0;
@@ -261,7 +261,7 @@ int main(int argc, char *argv[])
 	prepare();
 
 	rc = test_btree();
-	if (!rc)
+	if (rc)
 		exit(rc);
 
 	return 0;
