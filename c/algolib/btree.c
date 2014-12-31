@@ -227,7 +227,8 @@ static int btree_node_insert_nonfull(struct btree_node *node,
 			btree_copy_key(&node->keys[i+1], key);
 			btree_copy_value(&node->values[i+1], value);
 			node->nr_keys++;
-			AL_LOG(AL_DBG, "inserted key into node=%p nr_keys=%d", node, node->nr_keys);
+			AL_LOG(AL_DBG, "inserted key into node=%p nr_keys=%d",
+					node, node->nr_keys);
 			return 0;
 		} else {
 			struct btree_node *child;
