@@ -7,7 +7,7 @@ Library of generic algorithms and data structures.
 #### Contains:
 - Quick sort, merge sort, insertion sort, counting sort
 - BFS, DFS, topological sort
-- Binary tree, binary search tree
+- Binary tree, binary search tree, B-tree
 - Stack, Queue
 - Trie and autocomplete, atoi, KMP(knuth morris pratt) substring search
 - Count min sketch
