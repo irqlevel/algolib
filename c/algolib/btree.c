@@ -352,15 +352,32 @@ static int btree_node_leaf_delete_key(struct btree_node *node,
 	return 0;
 }
 
-static int btree_node_delete_key(struct btree_node *node, struct btree_key *key)
+static int btree_node_internal_delete_key(struct btree_node *node,
+		struct btree_key *key)
+{
+	AL_LOG(AL_ERR, "not implemented");
+	return -1;
+}
+
+static int btree_node_child_delete_key(struct btree_node *node,
+		struct btree_key *key)
+{
+	AL_LOG(AL_ERR, "not implemented");
+	return -1;
+}
+
+static int btree_node_delete_key(struct btree_node *node,
+		struct btree_key *key)
 {
 	int i;
 	if ((i = btree_node_has_key(node, key)) >= 0) {
 		if (node->leaf)
 			return btree_node_leaf_delete_key(node, i);
+		else
+			return btree_node_internal_delete_key(node, key);
 	}
-	AL_LOG(AL_ERR, "not implemented");
-	return -1;
+
+	return btree_node_child_delete_key(node, key);
 }
 
 int btree_delete_key(struct btree *tree, struct btree_key *key)
