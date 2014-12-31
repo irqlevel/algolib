@@ -144,6 +144,12 @@ static void btree_node_copy_kv(struct btree_node *dst, int dst_index,
 	btree_copy_value(&dst->values[dst_index], &src->values[src_index]);
 }
 
+static void btree_node_zero_kv(struct btree_node *dst, int dst_index)
+{
+	al_memset(&dst->keys[dst_index], 0, sizeof(struct btree_key));
+	al_memset(&dst->values[dst_index], 0, sizeof(struct btree_value));
+}
+
 static void btree_node_split_child(struct btree_node *node,
 		int index, struct btree_node *new)
 {
@@ -337,26 +343,136 @@ int btree_find_key(struct btree *tree,
 	return 0;
 }
 
-static int btree_node_leaf_delete_key(struct btree_node *node,
+static void __btree_node_delete_child_index(struct btree_node *node,
 		int index)
 {
 	int i;
 
-	AL_BUG_ON(!node->leaf);
-	AL_BUG_ON(index < 0 || index >= node->nr_keys);
+	for (i = (index + 1); i < node->nr_keys + 1; i++) {
+		node->childs[i-1].addr = node->childs[i].addr;
+	}
+}
 
+static void __btree_node_delete_key_index(struct btree_node *node,
+		int index)
+{
+	int i;
+
+	AL_BUG_ON(node->nr_keys < 1);
+	/* do shift to the left */
 	for (i = (index + 1); i < node->nr_keys; i++) {
 		btree_node_copy_kv(node, i-1, node, i);	
 	}
-	node->nr_keys--;
-	return 0;
+	/* zero last slot */
+	btree_node_zero_kv(node, node->nr_keys-1);
 }
 
-static int btree_node_internal_delete_key(struct btree_node *node,
-		struct btree_key *key)
+
+static void btree_node_leaf_delete_key(struct btree_node *node,
+		int index)
 {
-	AL_LOG(AL_ERR, "not implemented");
-	return -1;
+	AL_BUG_ON(!node->leaf);
+	AL_BUG_ON(index < 0 || index >= node->nr_keys);
+	__btree_node_delete_key_index(node, index);
+	node->nr_keys--;
+}
+
+
+static struct btree_node *
+btree_node_find_predecessor(struct btree_node *node, int *pindex)
+{
+	struct btree_node *curr = node;
+	while (1) {
+		if (curr->leaf) {
+			*pindex = curr->nr_keys - 1;
+			return curr;
+		}
+		curr = curr->childs[curr->nr_keys].addr;
+	}
+}
+
+static struct btree_node *
+btree_node_find_successor(struct btree_node *node, int *pindex)
+{
+	struct btree_node *curr = node;
+	while (1) {
+		if (curr->leaf) {
+			*pindex = 0;
+			return curr;
+		}
+		curr = curr->childs[0].addr;
+	}
+}
+
+static int btree_node_delete_key_index(struct btree_node *node,
+		int index);
+
+static int btree_node_internal_delete_key(struct btree_node *node,
+		int index)
+{
+	struct btree_node *pre_child = NULL, *suc_child = NULL;
+
+	pre_child = node->childs[index].addr;
+	suc_child = node->childs[index+1].addr;
+
+	if (pre_child->nr_keys >= pre_child->t) {
+		struct btree_node *pre;
+		int pre_index;
+
+		pre = btree_node_find_predecessor(pre_child, &pre_index);
+		btree_node_copy_kv(node, index, pre, pre_index);
+		if (!btree_node_delete_key_index(pre, pre_index))
+			AL_BUG();
+		return 0;
+	} else if (suc_child->nr_keys >= suc_child->t) {
+		struct btree_node *suc;
+		int suc_index;
+
+		suc = btree_node_find_successor(suc_child, &suc_index);
+		btree_node_copy_kv(node, index, suc, suc_index);
+		if (!btree_node_delete_key_index(suc, suc_index))
+			AL_BUG();
+		return 0;
+	} else {
+		/* merge key and all of suc_child into pre_child */
+		/* node loses key and pointer to suc_child */
+		int i, pos, key_index = pre_child->nr_keys;
+		
+		/* copy key to pre_child */
+		btree_node_copy_kv(pre_child, key_index, node, index);
+
+		pos = key_index + 1;
+		for (i = 0; i < suc_child->nr_keys; i++, pos++) {
+
+			/* copy keys from suc_child to pre_child */
+			btree_node_copy_kv(pre_child, pos, suc_child, i);
+
+			/* copy childs from suc_child to pre_child */
+			pre_child->childs[pos].addr =
+				suc_child->childs[i].addr;
+		}
+
+		/* copy last child */
+		pre_child->childs[pos].addr =
+				suc_child->childs[i].addr;
+
+		/* update pre_child number of keys */
+		pre_child->nr_keys += 1 + suc_child->nr_keys;
+		
+		/* delete key from node */
+		__btree_node_delete_key_index(node, index);
+		__btree_node_delete_child_index(node, index+1);
+		node->nr_keys--;
+		
+		/* delete suc_child */
+		suc_child->nr_keys = 0;
+		btree_node_delete(suc_child);
+		
+		/* finally delete key from pre_child */
+		if (!btree_node_delete_key_index(pre_child, key_index))
+			AL_BUG();
+		return 0;
+	}
 }
 
 static int btree_node_child_delete_key(struct btree_node *node,
@@ -366,18 +482,25 @@ static int btree_node_child_delete_key(struct btree_node *node,
 	return -1;
 }
 
+static int btree_node_delete_key_index(struct btree_node *node,
+		int index)
+{
+	if (node->leaf) {
+		btree_node_leaf_delete_key(node, index);
+		return 0;
+	} else
+		return btree_node_internal_delete_key(node, index);
+	
+}
+
 static int btree_node_delete_key(struct btree_node *node,
 		struct btree_key *key)
 {
 	int i;
-	if ((i = btree_node_has_key(node, key)) >= 0) {
-		if (node->leaf)
-			return btree_node_leaf_delete_key(node, i);
-		else
-			return btree_node_internal_delete_key(node, key);
-	}
-
-	return btree_node_child_delete_key(node, key);
+	if ((i = btree_node_has_key(node, key)) >= 0)
+		return btree_node_delete_key_index(node, i);
+	else
+		return btree_node_child_delete_key(node, key);
 }
 
 int btree_delete_key(struct btree *tree, struct btree_key *key)
