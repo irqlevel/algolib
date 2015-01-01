@@ -42,6 +42,11 @@ struct btree {
 	struct btree_node	*root;
 };
 
+struct btree_info {
+	u64 nr_keys;
+	u64 nr_nodes;
+};
+
 #pragma pack(pop)
 
 
@@ -67,6 +72,7 @@ extern struct btree_value *btree_gen_value();
 extern char *btree_key_hex(struct btree_key *key);
 extern char *btree_value_hex(struct btree_value *value);
 extern void btree_log(struct btree *tree, int llevel);
-extern void btree_stats(struct btree *tree, u64 *nr_keys, u64 *nr_nodes);
+
+extern void btree_stats(struct btree *tree, struct btree_info *info);
 
 

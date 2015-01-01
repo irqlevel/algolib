@@ -235,13 +235,13 @@ cleanup:
 
 static int test_btree_stats_case(struct btree *t)
 {
-	u64 nr_keys, nr_nodes;
+	struct btree_info info;
 	/* output some stats */
 	btree_log(t, AL_TST);
-	btree_stats(t, &nr_keys, &nr_nodes);
+	btree_stats(t, &info);
 
-	AL_LOG(AL_TST, "tree %p nr_keys=%lu nr_nodes=%lu",
-		t, nr_keys, nr_nodes);
+	AL_LOG(AL_TST, "tree %p nr_keys=%llu nr_nodes=%llu",
+		t, info.nr_keys, info.nr_nodes);
 
 	return 0;
 }
