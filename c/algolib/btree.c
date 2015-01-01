@@ -295,7 +295,17 @@ int btree_insert_key(struct btree *tree, struct btree_key *key,
 	}
 }
 
-static struct btree_node *btree_find_node_key(struct btree_node *node,
+static int 
+btree_node_find_key_index(struct btree_node *node,
+	struct btree_key *key)
+{
+	int i = 0;
+	while (i < node->nr_keys && btree_cmp_key(key, &node->keys[i]) > 0)
+		i++;
+	return i;
+}
+ 
+static struct btree_node *btree_node_find_key(struct btree_node *node,
 		struct btree_key *key, int *pindex)
 {
 	int i;
@@ -303,11 +313,8 @@ static struct btree_node *btree_find_node_key(struct btree_node *node,
 	while (1) {
 		if (node->nr_keys == 0)
 			return NULL;
-		i = 0;
-		while (i < node->nr_keys &&
-				btree_cmp_key(key, &node->keys[i]) > 0)
-			i++;
 
+		i = btree_node_find_key_index(node, key);
 		if (i < node->nr_keys &&
 				btree_cmp_key(key, &node->keys[i]) == 0) {
 			*pindex = i;
@@ -332,7 +339,7 @@ int btree_find_key(struct btree *tree,
 		return -1;
 	}
 
-	node = btree_find_node_key(tree->root, key, &index);
+	node = btree_node_find_key(tree->root, key, &index);
 	if (node == NULL)
 		return -1;
 
@@ -379,7 +386,7 @@ static void btree_node_leaf_delete_key(struct btree_node *node,
 
 
 static struct btree_node *
-btree_node_find_predecessor(struct btree_node *node, int *pindex)
+btree_node_find_left_most(struct btree_node *node, int *pindex)
 {
 	struct btree_node *curr = node;
 	while (1) {
@@ -392,7 +399,7 @@ btree_node_find_predecessor(struct btree_node *node, int *pindex)
 }
 
 static struct btree_node *
-btree_node_find_successor(struct btree_node *node, int *pindex)
+btree_node_find_right_most(struct btree_node *node, int *pindex)
 {
 	struct btree_node *curr = node;
 	while (1) {
@@ -419,7 +426,7 @@ static int btree_node_internal_delete_key(struct btree_node *node,
 		struct btree_node *pre;
 		int pre_index;
 
-		pre = btree_node_find_predecessor(pre_child, &pre_index);
+		pre = btree_node_find_left_most(pre_child, &pre_index);
 		btree_node_copy_kv(node, index, pre, pre_index);
 		if (!btree_node_delete_key_index(pre, pre_index))
 			AL_BUG();
@@ -428,7 +435,7 @@ static int btree_node_internal_delete_key(struct btree_node *node,
 		struct btree_node *suc;
 		int suc_index;
 
-		suc = btree_node_find_successor(suc_child, &suc_index);
+		suc = btree_node_find_right_most(suc_child, &suc_index);
 		btree_node_copy_kv(node, index, suc, suc_index);
 		if (!btree_node_delete_key_index(suc, suc_index))
 			AL_BUG();
@@ -474,12 +481,25 @@ static int btree_node_internal_delete_key(struct btree_node *node,
 		return 0;
 	}
 }
+static int btree_node_delete_key(struct btree_node *node,
+		struct btree_key *key);
 
 static int btree_node_child_delete_key(struct btree_node *node,
 		struct btree_key *key)
 {
-	AL_LOG(AL_ERR, "not implemented");
-	return -1;
+	int i;
+	struct btree_node *child;
+
+	AL_BUG_ON(btree_node_has_key(node, key) >= 0);
+	i = btree_node_find_key_index(node, key);
+	child = node->childs[i].addr;
+	if (child == NULL)
+		return -1;
+		
+	if (child->nr_keys < child->t) {
+	}
+
+	return btree_node_delete_key(child, key);
 }
 
 static int btree_node_delete_key_index(struct btree_node *node,
@@ -489,8 +509,7 @@ static int btree_node_delete_key_index(struct btree_node *node,
 		btree_node_leaf_delete_key(node, index);
 		return 0;
 	} else
-		return btree_node_internal_delete_key(node, index);
-	
+		return btree_node_internal_delete_key(node, index);	
 }
 
 static int btree_node_delete_key(struct btree_node *node,
