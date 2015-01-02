@@ -246,7 +246,7 @@ static int test_btree_stats_case(struct btree *t)
 	return 0;
 }
 
-static int test_btree_insert(int num_keys)
+static int __test_btree(int num_keys)
 {
 	struct btree *t = NULL;
 	struct btree_key **keys = NULL;
@@ -294,53 +294,123 @@ static int test_btree_insert(int num_keys)
 	AL_LOG(AL_TST, "t=%p, root=%p sz=%zu",
 			t, t->root, sizeof(*t->root));
 
+	err = btree_check(t);
+	if (err) {
+		AL_LOG(AL_ERR, "t=%p check errs=%d", t, err);
+		goto cleanup;
+	}
+
 	/* insert keys */
 	err = test_btree_insert_case(t, keys, values, num_keys, 0, 0);
 	if (err)
 		goto cleanup;
-	
+
+	err = btree_check(t);
+	if (err) {
+		AL_LOG(AL_ERR, "t=%p check errs=%d", t, err);
+		goto cleanup;
+	}
+
+
 	/* output tree structures and stats */
 	err = test_btree_stats_case(t);
 	if (err)
 		goto cleanup;
+
+	err = btree_check(t);
+	if (err) {
+		AL_LOG(AL_ERR, "t=%p check errs=%d", t, err);
+		goto cleanup;
+	}
 
 	/* insert keys again */
 	err = test_btree_insert_case(t, keys, values, num_keys, 0, 1);
 	if (err)
 		goto cleanup;
+
+	err = btree_check(t);
+	if (err) {
+		AL_LOG(AL_ERR, "t=%p check errs=%d", t, err);
+		goto cleanup;
+	}
+
+
 	/* output tree structures and stats */
 	err = test_btree_stats_case(t);
 	if (err)
 		goto cleanup;
 
+	err = btree_check(t);
+	if (err) {
+		AL_LOG(AL_ERR, "t=%p check errs=%d", t, err);
+		goto cleanup;
+	}
 
 	/* replace keys */
 	err = test_btree_insert_case(t, keys, values, num_keys, 1, 0);
 	if (err)
 		goto cleanup;
+
+	err = btree_check(t);
+	if (err) {
+		AL_LOG(AL_ERR, "t=%p check errs=%d", t, err);
+		goto cleanup;
+	}
+
 	/* output tree structures and stats */
 	err = test_btree_stats_case(t);
 	if (err)
 		goto cleanup;
 
+	err = btree_check(t);
+	if (err) {
+		AL_LOG(AL_ERR, "t=%p check errs=%d", t, err);
+		goto cleanup;
+	}
+
 	/* find keys */
 	err = test_btree_find_case(t, keys, values, num_keys);
 	if (err)
 		goto cleanup;
+
+	err = btree_check(t);
+	if (err) {
+		AL_LOG(AL_ERR, "t=%p check errs=%d", t, err);
+		goto cleanup;
+	}
+
 	/* output tree structures and stats */
 	err = test_btree_stats_case(t);
 	if (err)
 		goto cleanup;
+
+	err = btree_check(t);
+	if (err) {
+		AL_LOG(AL_ERR, "t=%p check errs=%d", t, err);
+		goto cleanup;
+	}
 
 	/* delete keys */
 	err = test_btree_delete_case(t, keys, values, num_keys);
 	if (err)
 		goto cleanup;
 	
+	err = btree_check(t);
+	if (err) {
+		AL_LOG(AL_ERR, "t=%p check errs=%d", t, err);
+		goto cleanup;
+	}
+
 	/* output tree structures and stats */
 	err = test_btree_stats_case(t);
 	if (err)
 		goto cleanup;
+
+	err = btree_check(t);
+	if (err) {
+		AL_LOG(AL_ERR, "t=%p check errs=%d", t, err);
+		goto cleanup;
+	}
 
 	AL_LOG(AL_TST, "PASSED");
 
@@ -371,7 +441,7 @@ cleanup:
 static int test_btree()
 {
 	int rc;
-	rc = test_btree_insert(10000);
+	rc = __test_btree(10000);
 	if (rc)
 		return rc;
 

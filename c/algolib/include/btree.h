@@ -40,6 +40,7 @@ struct btree_node {
 
 struct btree {
 	struct btree_node	*root;
+	u32			t;
 };
 
 struct btree_info {
@@ -75,4 +76,5 @@ extern void btree_log(struct btree *tree, int llevel);
 
 extern void btree_stats(struct btree *tree, struct btree_info *info);
 
+extern int btree_check(struct btree *tree);
 

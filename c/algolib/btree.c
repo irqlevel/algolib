@@ -547,7 +547,7 @@ static int btree_node_delete_key(struct btree_node *node,
 		}
 	} else {
 		return btree_node_child_delete_key(node, &key_copy);
-	}
+}
 }
 
 
@@ -603,4 +603,78 @@ void btree_stats(struct btree *tree, struct btree_info *info)
 void btree_log(struct btree *tree, int llevel)
 {
 	btree_log_node(tree->root, 1, llevel);
+}
+
+static int btree_node_check(struct btree_node *node, int root)
+{
+	int i;
+	int errs = 0;
+	struct btree_key *prev_key;
+
+	if (root) {
+		if (node->nr_keys > (2*node->t - 1)) {
+			AL_LOG(AL_ERR, "node %p contains %d keys",
+				node, node->nr_keys);
+			errs++;
+		}
+	} else {
+		if (node->nr_keys > (2*node->t - 1)) {
+			AL_LOG(AL_ERR, "node %p contains %d keys",
+				node->nr_keys);
+			errs++;
+		}
+
+		if (node->nr_keys < (node->t - 1)) {
+			AL_LOG(AL_ERR, "node %p contains %d keys",
+				node, node->nr_keys);
+			errs++;
+		}
+	}
+
+	prev_key = NULL;
+	for (i = 0 ; i < node->nr_keys; i++) {
+		if (btree_key_is_zero(&node->keys[i])) {
+			AL_LOG(AL_ERR, "node %p zero key %d found",
+				node, i);
+			errs++;
+		} else {
+			if (prev_key && (btree_cmp_key(prev_key,
+				&node->keys[i]) >= 0)) {
+				AL_LOG(AL_ERR, "node %p key %d not sorted",
+					node, i);
+				errs++;
+			}
+			prev_key = &node->keys[i];
+		}
+		if (!node->leaf) {
+			if (!node->childs[i].addr) {
+				AL_LOG(AL_ERR, "node %p zero child %d found",
+					node, i);
+				errs++;
+			}
+		}
+	}
+
+	if (!node->leaf) {
+		if (!root || (node->nr_keys > 0)) {
+			if (!node->childs[i].addr) {
+				AL_LOG(AL_ERR, "node %p zero child %d found",
+						node, i);
+				errs++;
+			}
+		}
+	}
+
+	for (i = 0; i < node->nr_keys+1; i++) {
+		struct btree_node *child;
+		child = node->childs[i].addr;
+		if (child)
+			errs+= btree_node_check(child, 0);
+	}
+	return errs;
+}
+
+int btree_check(struct btree *tree)
+{
+	return btree_node_check(tree->root, 1);
 }
