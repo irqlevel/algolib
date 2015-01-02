@@ -218,6 +218,7 @@ static int test_btree_delete_case(struct btree *t, struct btree_key **keys,
 		if (err) {
 			AL_LOG(AL_ERR, "Cant delete key[%d] %s, rc=%d",
 					i, key_hex, err);
+			goto cleanup;
 		} else {
 			AL_LOG(AL_TST, "Deleted key[%d] %s, rc=%d", i, key_hex, err);
 		}
