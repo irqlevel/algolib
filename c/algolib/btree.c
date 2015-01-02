@@ -513,13 +513,11 @@ static int btree_node_child_delete_key(struct btree_node *node,
 	int i;
 	struct btree_node *child;
 
+	AL_BUG_ON(node->leaf);
 	AL_BUG_ON(btree_node_has_key(node, key) >= 0);
 	i = btree_node_find_key_index(node, key);
 	child = node->childs[i].addr;
-	if (child == NULL) {
-		AL_LOG(AL_ERR, "child not found");
-		return -1;
-	}
+	AL_BUG_ON(!child);
 
 	if (child->nr_keys < child->t) {
 		struct btree_node *left = (i > 0) ?
@@ -576,10 +574,12 @@ static int btree_node_delete_key(struct btree_node *node,
 			return btree_node_internal_delete_key(node, &key_copy);	
 		}
 	} else {
-		return btree_node_child_delete_key(node, &key_copy);
+		if (node->leaf)
+			return -1;
+		else
+			return btree_node_child_delete_key(node, &key_copy);
+	}
 }
-}
-
 
 int btree_delete_key(struct btree *tree, struct btree_key *key)
 {
