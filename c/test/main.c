@@ -247,13 +247,35 @@ static int test_btree_stats_case(struct btree *t)
 	return 0;
 }
 
-static int __test_btree(int num_keys)
+void __test_btree_free_kvs(struct btree_key **keys,
+	struct btree_value **values, int num_keys)
 {
-	struct btree *t = NULL;
+	int i;
+
+	if (values) {
+		for (i = 0; i < num_keys; i++)
+			if (values[i])
+				al_free(values[i]);
+		free(values);
+	}
+
+	if (keys) {
+		for (i = 0; i < num_keys; i++)
+			if (keys[i])
+				al_free(keys[i]);
+		free(keys);
+	}
+}
+
+int __test_btree_gen_kvs(struct btree_key ***pkeys,
+	struct btree_value ***pvalues, int num_keys)
+{
 	struct btree_key **keys = NULL;
 	struct btree_value **values = NULL;
-	int i;
-	int err;
+	int i, err;
+
+	*pkeys = NULL;
+	*pvalues = NULL;
 
 	keys = malloc(num_keys*sizeof(struct btree_key *));
 	if (!keys) {
@@ -285,6 +307,25 @@ static int __test_btree(int num_keys)
 			goto cleanup;
 		}
 	}
+
+	*pkeys = keys;
+	*pvalues = values;
+	return 0;
+cleanup:
+	__test_btree_free_kvs(keys, values, num_keys);
+	return err;
+}
+
+static int __test_btree(int num_keys)
+{
+	struct btree *t = NULL;
+	struct btree_key **keys = NULL;
+	struct btree_value **values = NULL;
+	int err;
+
+	err = __test_btree_gen_kvs(&keys, &values, num_keys);
+	if (err)
+		goto cleanup;
 
 	t = btree_create();
 	if (!t) {
@@ -420,19 +461,7 @@ cleanup:
 	if (err)
 		AL_LOG(AL_TST, "FAILED");
 
-	if (values) {
-		for (i = 0; i < num_keys; i++)
-			if (values[i])
-				al_free(values[i]);
-		free(values);
-	}
-
-	if (keys) {
-		for (i = 0; i < num_keys; i++)
-			if (keys[i])
-				al_free(keys[i]);
-		free(keys);
-	}
+	__test_btree_free_kvs(keys, values, num_keys);
 
 	if (t)
 		btree_delete(t);
