@@ -50,6 +50,9 @@ struct btree_key *btree_gen_key()
 {
 	struct btree_key *key;
 	key = al_malloc(sizeof(*key));
+	if (!key)
+		return NULL;
+
 	if (al_random_buf(key, sizeof(*key))) {
 		al_free(key);
 		return NULL;
@@ -61,6 +64,9 @@ struct btree_value *btree_gen_value()
 {
 	struct btree_value *value;
 	value = al_malloc(sizeof(*value));
+	if (!value)
+		return NULL;
+
 	if (al_random_buf(value, sizeof(*value))) {
 		al_free(value);
 		return NULL;
@@ -352,6 +358,9 @@ int btree_find_key(struct btree *tree,
 		return -1;
 
 	value = al_malloc(sizeof(*value));
+	if (!value)
+		return -1;
+
 	btree_copy_value(value, &node->values[index]);
 	*pvalue = value;
 
