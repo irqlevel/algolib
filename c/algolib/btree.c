@@ -158,6 +158,38 @@ static void btree_node_copy_kv(struct btree_node *dst, int dst_index,
 	btree_copy_value(&dst->values[dst_index], &src->values[src_index]);
 }
 
+static void btree_node_copy_child(struct btree_node *dst, int dst_index,
+	struct btree_node *src, int src_index)
+{
+	dst->childs[dst_index].addr = src->childs[src_index].addr;
+}
+
+static void btree_node_put_child(struct btree_node *dst, int dst_index,
+	struct btree_node *src, int src_index)
+{
+	int i;
+
+	/* free space for dst_index */
+	for (i = dst->nr_keys; i >= dst_index; i--) {
+		btree_node_copy_child(dst, i + 1, dst, i);
+	}
+
+	btree_node_copy_child(dst, dst_index, src, src_index);
+}
+
+static void btree_node_put_kv(struct btree_node *dst, int dst_index,
+	struct btree_node *src, int src_index)
+{
+	int i;
+
+	/* free space for dst_index */
+	for (i = dst->nr_keys - 1; i >= dst_index; i--) {
+		btree_node_copy_kv(dst, i + 1, dst, i);
+	}
+
+	btree_node_copy_kv(dst, dst_index, src, src_index);
+}
+
 static void btree_node_zero_kv(struct btree_node *dst, int dst_index)
 {
 	al_memset(&dst->keys[dst_index], 0, sizeof(struct btree_key));
@@ -507,6 +539,36 @@ static int btree_node_internal_delete_key(struct btree_node *node,
 	}
 }
 
+static void btree_node_child_give_key(struct btree_node *node,
+	struct btree_node *child, int child_index,
+	struct btree_node *sib, int left)
+{
+	/* give child an extra key by moving a key from node
+	* down into child, moving a key from child's
+	* immediate left or right sibling up into node,
+	* and moving the appropriate child pointer from the
+	* sibling into child
+	*/
+
+	if (!left) {
+		btree_node_copy_kv(child, child->nr_keys, node, child_index);
+		btree_node_copy_kv(node, child_index, sib, 0);
+		btree_node_copy_child(child, child->nr_keys + 1, sib, 0);
+
+		__btree_node_delete_key_index(sib, 0);
+		__btree_node_delete_child_index(sib, 0);
+	} else {
+		btree_node_put_kv(child, 0, node, child_index-1);
+		btree_node_copy_kv(node, child_index-1, sib, sib->nr_keys-1);
+		btree_node_put_child(child, 0, sib, sib->nr_keys);
+
+		__btree_node_delete_key_index(sib, sib->nr_keys-1);
+		__btree_node_delete_child_index(sib, sib->nr_keys);
+	}
+	child->nr_keys++;
+	sib->nr_keys--;
+}
+
 static int btree_node_child_delete_key(struct btree_node *node,
 		struct btree_key *key)
 {
@@ -525,16 +587,10 @@ static int btree_node_child_delete_key(struct btree_node *node,
 		struct btree_node *right = (i <= node->nr_keys) ?
 			node->childs[i+1].addr : NULL;
 		
-		if ((left && left->nr_keys >= left->t) ||
-			(right && right->nr_keys >= right->t)) {
-			/* give child an extra key by moving a key from node 
-			* down into child, moving a key from child's 
-			* immediate left or right sibling up into node,
- 			* and moving the appropriate child pointer from the 
- 			* sibling into child
- 			*/
-			AL_LOG(AL_ERR, "not implemented");
-			return -1;	
+		if (left && left->nr_keys >= left->t) {
+			btree_node_child_give_key(node, child, i, left, 1);
+		} else if (right && right->nr_keys >= right->t) {
+			btree_node_child_give_key(node, child, i, right, 0);
 		} else if (left && right && left->nr_keys < left->t &&
 			right->nr_keys < right->t) {
 			/* merge child with left, which involves
@@ -551,6 +607,7 @@ static int btree_node_child_delete_key(struct btree_node *node,
 				&node->values[i-1]);
 			__btree_node_delete_key_index(node, i-1);
 			__btree_node_delete_child_index(node, i);
+			node->nr_keys--;
 			__btree_node_free(child);
 			child = left;
 		}	
