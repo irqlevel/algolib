@@ -2,7 +2,7 @@
 
 #include "types.h"
 
-#define BTREE_T 4
+#define BTREE_T 1024
 
 #pragma pack(push, 1)
 
@@ -51,7 +51,7 @@ struct btree_info {
 #pragma pack(pop)
 
 
-//_Static_assert(sizeof(struct btree_node) == 65536, "size is not correct");
+_Static_assert(sizeof(struct btree_node) == 65536, "size is not correct");
 
 extern struct btree *btree_create(void);
 

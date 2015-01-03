@@ -471,7 +471,7 @@ cleanup:
 static int test_btree()
 {
 	int rc;
-	rc = __test_btree(1000);
+	rc = __test_btree(100000);
 	if (rc)
 		return rc;
 
