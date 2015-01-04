@@ -555,61 +555,6 @@ static void btree_node_copy(struct btree_node *dst, struct btree_node *src)
 	dst->leaf = src->leaf;
 }
 
-static int btree_node_delete_key(struct btree_node *node,
-		struct btree_key *key);
-
-static int btree_node_internal_delete_key(struct btree_node *node,
-		struct btree_key *key)
-{
-	struct btree_node *pre_child = NULL, *suc_child = NULL;
-	int index;
-
-	index = btree_node_has_key(node, key);
-	AL_BUG_ON(index < 0);
-
-	pre_child = node->childs[index].addr;
-	suc_child = node->childs[index+1].addr;
-
-	if (pre_child->nr_keys >= pre_child->t) {
-		struct btree_node *pre;
-		int pre_index;
-
-		pre = btree_node_find_left_most(pre_child, &pre_index);
-		btree_node_copy_kv(node, index, pre, pre_index);
-		return btree_node_delete_key(pre, &pre->keys[pre_index]);
-	} else if (suc_child->nr_keys >= suc_child->t) {
-		struct btree_node *suc;
-		int suc_index;
-
-		suc = btree_node_find_right_most(suc_child, &suc_index);
-		btree_node_copy_kv(node, index, suc, suc_index);
-		return btree_node_delete_key(suc, &suc->keys[suc_index]);
-	} else {
-		/* merge key and all of suc_child into pre_child */
-		/* node loses key and pointer to suc_child */
-		int key_index = pre_child->nr_keys;
-		
-		btree_node_merge(pre_child, suc_child, &node->keys[index],
-			&node->values[index]);
-		/* delete key from node */
-		__btree_node_delete_key_index(node, index);
-		__btree_node_delete_child_index(node, index+1);
-		node->nr_keys--;
-		
-		/* delete suc_child */
-		__btree_node_free(suc_child);
-		if (node->nr_keys == 0) {
-			btree_node_copy(node, pre_child);
-			__btree_node_free(pre_child);
-			pre_child = node;		
-		}
-
-		/* finally delete key from pre_child */
-		return btree_node_delete_key(pre_child,
-			&pre_child->keys[key_index]);
-	}
-}
-
 static void btree_node_child_give_key(struct btree_node *node,
 	struct btree_node *child, int child_index,
 	struct btree_node *sib, int left)
@@ -723,38 +668,93 @@ btree_node_child_balance(struct btree_node *node,
 	return child;
 }
 
-static int btree_node_child_delete_key(struct btree_node *node,
-		struct btree_key *key)
-{
-	struct btree_node *child;
-	int i;
-
-	AL_BUG_ON(btree_node_has_key(node, key) >= 0);
-	i = btree_node_find_key_index(node, key);
-	child = btree_node_child_balance(node, i);
-
-	return btree_node_delete_key(child, key);
-}
-
 static int btree_node_delete_key(struct btree_node *node,
 		struct btree_key *key)
 {
 	struct btree_key key_copy;
 	int i;
-	
+
+restart:
 	btree_copy_key(&key_copy, key);
-	if ((i = btree_node_has_key(node, &key_copy)) >= 0) {
+	key = &key_copy;
+
+	if ((i = btree_node_has_key(node, key)) >= 0) {
 		if (node->leaf) {
-			btree_node_leaf_delete_key(node, &key_copy);
+			btree_node_leaf_delete_key(node, key);
 			return 0;
 		} else {
-			return btree_node_internal_delete_key(node, &key_copy);	
+			struct btree_node *pre_child = NULL;
+			struct btree_node *suc_child = NULL;
+			int index;
+
+			index = btree_node_has_key(node, key);
+			AL_BUG_ON(index < 0);
+
+			pre_child = node->childs[index].addr;
+			suc_child = node->childs[index+1].addr;
+
+			if (pre_child->nr_keys >= pre_child->t) {
+				struct btree_node *pre;
+				int pre_index;
+
+				pre = btree_node_find_left_most(pre_child,
+					&pre_index);
+				btree_node_copy_kv(node, index,
+					pre, pre_index);
+				node = pre;
+				key = &pre->keys[pre_index];
+				goto restart;
+			} else if (suc_child->nr_keys >= suc_child->t) {
+				struct btree_node *suc;
+				int suc_index;
+
+				suc = btree_node_find_right_most(suc_child,
+					&suc_index);
+				btree_node_copy_kv(node, index,
+					suc, suc_index);
+				node = suc;
+				key = &suc->keys[suc_index];
+				goto restart;
+			} else {
+				/* merge key and all of suc_child
+				* into pre_child
+				* node loses key and pointer to suc_child
+				*/
+				int key_index = pre_child->nr_keys;
+
+				btree_node_merge(pre_child, suc_child,
+					&node->keys[index],
+					&node->values[index]);
+				/* delete key from node */
+				__btree_node_delete_key_index(node,
+						index);
+				__btree_node_delete_child_index(node,
+						index+1);
+				node->nr_keys--;
+
+				/* delete suc_child */
+				__btree_node_free(suc_child);
+				if (node->nr_keys == 0) {
+					btree_node_copy(node, pre_child);
+					__btree_node_free(pre_child);
+					pre_child = node;
+				}
+				node = pre_child;
+				key = &pre_child->keys[key_index];
+				goto restart;
+			}
 		}
 	} else {
-		if (node->leaf)
+		if (node->leaf) {
 			return -1;
-		else
-			return btree_node_child_delete_key(node, &key_copy);
+		} else {
+			struct btree_node *child;
+			AL_BUG_ON(btree_node_has_key(node, key) >= 0);
+			i = btree_node_find_key_index(node, key);
+			child = btree_node_child_balance(node, i);
+			node = child;
+			goto restart;
+		}
 	}
 }
 
